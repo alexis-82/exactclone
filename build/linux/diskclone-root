@@ -1,0 +1,7 @@
+#!/bin/sh
+# Root-side helper started by pkexec: restores the display environment
+# received from diskclone-launch.sh and starts the application.
+export DISPLAY="$1" XAUTHORITY="$2" WAYLAND_DISPLAY="$3" XDG_RUNTIME_DIR="$4" LANG="$6"
+[ -n "$5" ] && export GDK_BACKEND="$5"
+[ -n "$7" ] && export DISKCLONE_DEV_SAFE="$7"
+exec /usr/local/bin/diskclone

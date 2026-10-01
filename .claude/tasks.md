@@ -55,9 +55,9 @@
 
 ## Fase 6 — Pacchetti
 
-- [ ] Task 32: Build Windows (`wails build -platform windows/amd64`) con manifest `requireAdministrator` e controllo WebView2 — DoD: l'exe su una macchina Windows pulita chiede UAC e si avvia.
-- [ ] Task 33: Build Linux (in WSL2 o su Linux) con `wails build -tags webkit2_41` (F8) + `diskclone-launch.sh` (pkexec con variabili d'ambiente), `.desktop`, policy polkit — DoD: dal menu applicazioni l'app chiede la password e si apre come root.
-- [ ] Task 34: Test dell'avvio Linux su GNOME Wayland e su sessione X11; applicazione del fallback (`GDK_BACKEND=x11`/`xhost`) se necessario — DoD: l'app si apre in entrambe le sessioni; procedura documentata nel README.
+- [~] Task 32: Build Windows (`wails build -platform windows/amd64`) con manifest `requireAdministrator` e controllo WebView2 — DoD: l'exe su una macchina Windows pulita chiede UAC e si avvia.
+- [~] Task 33: Build Linux (in WSL2 o su Linux) con `wails build -tags webkit2_41` (F8) + `diskclone-launch.sh` (pkexec con variabili d'ambiente), `.desktop`, policy polkit — DoD: dal menu applicazioni l'app chiede la password e si apre come root.
+- [~] Task 34: Test dell'avvio Linux su GNOME Wayland e su sessione X11; applicazione del fallback (`GDK_BACKEND=x11`/`xhost`) se necessario — DoD: l'app si apre in entrambe le sessioni; procedura documentata nel README.
 
 ## Fase 7 — Collaudo
 
