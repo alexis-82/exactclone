@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -31,6 +32,12 @@ func coded(code string, err error) error {
 type App struct {
 	ctx  context.Context
 	jobs *job.Manager
+
+	// Used space per partition, measured once (mounting is slow) and
+	// cleared by ListDisks.
+	usageMu sync.Mutex
+	usage   map[string]uint64
+	measure func(disk.Partition) (uint64, error) // nil: measureUsage
 }
 
 func NewApp() *App {
@@ -52,6 +59,9 @@ func (a *App) IsDevSafe() bool { return devSafe() }
 
 // ListDisks returns the physical disks.
 func (a *App) ListDisks() ([]disk.Disk, error) {
+	a.usageMu.Lock()
+	a.usage = nil
+	a.usageMu.Unlock()
 	disks, err := disk.List()
 	if err != nil {
 		return nil, coded("list_disks_failed", err)
@@ -107,32 +117,73 @@ type Estimate struct {
 	Partitions []PartitionEstimate `json:"partitions"`
 }
 
-// EstimateArchive mounts the selected partitions read-only and measures their used space.
+// EstimateArchive measures the used space of the selected partitions.
 func (a *App) EstimateArchive(diskID string, partitionIDs []string) (Estimate, error) {
-	var est Estimate
 	d, err := findDisk(diskID)
 	if err != nil {
-		return est, err
+		return Estimate{}, err
 	}
+	return a.estimate(d, selectedPartitions(d, partitionIDs))
+}
+
+func (a *App) estimate(d disk.Disk, parts []disk.Partition) (Estimate, error) {
+	var est Estimate
 	var usages []uint64
-	for _, p := range selectedPartitions(d, partitionIDs) {
+	for _, p := range parts {
 		if !p.Supported {
 			continue
 		}
-		root, cleanup, err := mount.ReadOnly(p)
+		used, err := a.usedSpace(d, p)
 		if err != nil {
-			return est, coded("mount_failed", err)
+			return est, err
 		}
-		info, err := mount.Stat(root)
-		cleanup()
-		if err != nil {
-			return est, coded("stat_failed", err)
-		}
-		usages = append(usages, info.UsedBytes)
-		est.Partitions = append(est.Partitions, PartitionEstimate{ID: p.ID, UsedBytes: info.UsedBytes})
+		usages = append(usages, used)
+		est.Partitions = append(est.Partitions, PartitionEstimate{ID: p.ID, UsedBytes: used})
 	}
 	est.TotalBytes = archive.Estimate(usages)
 	return est, nil
+}
+
+// usedSpace returns the cached used space of p, measuring it the first time.
+// The key includes serial and size so that another disk that got the same
+// device name is never mistaken for this one.
+func (a *App) usedSpace(d disk.Disk, p disk.Partition) (uint64, error) {
+	key := fmt.Sprintf("%s|%s|%d|%s|%d", d.ID, d.Serial, d.SizeBytes, p.ID, p.SizeBytes)
+	a.usageMu.Lock()
+	used, ok := a.usage[key]
+	a.usageMu.Unlock()
+	if ok {
+		return used, nil
+	}
+	measure := a.measure
+	if measure == nil {
+		measure = measureUsage
+	}
+	used, err := measure(p)
+	if err != nil {
+		return 0, err
+	}
+	a.usageMu.Lock()
+	if a.usage == nil {
+		a.usage = map[string]uint64{}
+	}
+	a.usage[key] = used
+	a.usageMu.Unlock()
+	return used, nil
+}
+
+// measureUsage mounts p read-only (if needed) and reads its used space.
+func measureUsage(p disk.Partition) (uint64, error) {
+	root, cleanup, err := mount.ReadOnly(p)
+	if err != nil {
+		return 0, coded("mount_failed", err)
+	}
+	defer cleanup()
+	info, err := mount.Stat(root)
+	if err != nil {
+		return 0, coded("stat_failed", err)
+	}
+	return info.UsedBytes, nil
 }
 
 // StartClone starts a bit-by-bit copy of disk srcID onto disk dstID.
@@ -166,7 +217,7 @@ func (a *App) StartArchive(diskID string, partitionIDs []string, outPath string)
 		return err
 	}
 	parts := selectedPartitions(d, partitionIDs)
-	est, err := a.EstimateArchive(diskID, partitionIDs)
+	est, err := a.estimate(d, parts)
 	if err != nil {
 		return err
 	}
