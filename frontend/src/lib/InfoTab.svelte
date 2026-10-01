@@ -48,7 +48,14 @@
         {$t('info.toolWindows')}
         <button class="link" onclick={() => BrowserOpenURL(SEVEN_ZIP_ZSTD)}>7-Zip-zstd</button>
       </li>
-      <li>{$t('info.toolLinux')} <code>zstd -d disco.img.zst</code></li>
+      <li>
+        {$t('info.toolLinux')}
+        <ul class="commands">
+          <li><code>sudo apt install zstd</code> <span class="muted">(Debian / Ubuntu)</span></li>
+          <li><code>sudo dnf install zstd</code> <span class="muted">(Fedora)</span></li>
+          <li><code>sudo pacman -S zstd</code> <span class="muted">(Arch)</span></li>
+        </ul>
+      </li>
     </ul>
   {/if}
 </section>
@@ -84,6 +91,10 @@
   }
   li {
     margin: 4px 0;
+  }
+  .commands {
+    list-style: none;
+    padding-left: 12px;
   }
   button.link {
     border: none;
