@@ -123,6 +123,36 @@ export namespace image {
 
 export namespace main {
 	
+	export class AppInfo {
+	    name: string;
+	    version: string;
+	    author: string;
+	    os: string;
+	    arch: string;
+	    goVersion: string;
+	    wailsVersion: string;
+	    configPath: string;
+	    elevated: boolean;
+	    devSafe: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AppInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.version = source["version"];
+	        this.author = source["author"];
+	        this.os = source["os"];
+	        this.arch = source["arch"];
+	        this.goVersion = source["goVersion"];
+	        this.wailsVersion = source["wailsVersion"];
+	        this.configPath = source["configPath"];
+	        this.elevated = source["elevated"];
+	        this.devSafe = source["devSafe"];
+	    }
+	}
 	export class Config {
 	    language: string;
 	

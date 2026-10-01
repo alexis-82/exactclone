@@ -9,6 +9,8 @@ export function Cancel():Promise<void>;
 
 export function DestinationInfo(arg1:string):Promise<mount.Info>;
 
+export function GetAppInfo():Promise<main.AppInfo>;
+
 export function GetConfig():Promise<main.Config>;
 
 export function IsDevSafe():Promise<boolean>;

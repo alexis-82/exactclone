@@ -56,8 +56,8 @@
 ## Fase 6 — Pacchetti
 
 - [~] Task 32: Build Windows (`wails build -platform windows/amd64`) con manifest `requireAdministrator` e controllo WebView2 — DoD: l'exe su una macchina Windows pulita chiede UAC e si avvia.
-- [~] Task 33: Build Linux (in WSL2 o su Linux) con `wails build -tags webkit2_41` (F8) + `diskclone-launch.sh` (pkexec con variabili d'ambiente), `.desktop`, policy polkit — DoD: dal menu applicazioni l'app chiede la password e si apre come root.
-- [~] Task 34: Test dell'avvio Linux su GNOME Wayland e su sessione X11; applicazione del fallback (`GDK_BACKEND=x11`/`xhost`) se necessario — DoD: l'app si apre in entrambe le sessioni; procedura documentata nel README.
+- [x] Task 33: Build Linux (in WSL2 o su Linux) con `wails build -tags webkit2_41` (F8) + `diskclone-launch.sh` (pkexec con variabili d'ambiente), `.desktop`, policy polkit — DoD: dal menu applicazioni l'app chiede la password e si apre come root. **Nota impl.:** verificato dallo sviluppatore su Linux il 2026-10-01: app compilata e launcher pkexec funzionanti.
+- [x] Task 34: Test dell'avvio Linux su GNOME Wayland e su sessione X11; applicazione del fallback (`GDK_BACKEND=x11`/`xhost`) se necessario — DoD: l'app si apre in entrambe le sessioni; procedura documentata nel README.
 
 ## Fase 7 — Collaudo
 
@@ -85,4 +85,4 @@
 - [x] Task 48: UI: modalità Unità → Immagine nel tab Backup, tab Ripristino immagine → unità, traduzioni — DoD: `npm run check`, `check:i18n` verdi; verifica a schermo.
 - [~] Task 49: Test di integrazione immagine (VHD Windows, loop Linux) — DoD: scritti e compilano; esecuzione da parte dell'utente.
 - [x] Task 50: Aggiornare README, guida di installazione e test report — DoD: nessun riferimento al file a file.
-
+- [x] Task 51: Tab "Info": `GetAppInfo` (nome/versione da `wails.json` incorporato, piattaforma, privilegi, modalità sicura, config, versioni Go/Wails, autore) e componente `InfoTab` IT/EN — DoD: `TestAppInfo`, `npm run check`, `check:i18n` verdi; verifica a schermo.

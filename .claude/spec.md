@@ -47,6 +47,9 @@ Utente tecnico o semi-tecnico (sistemista, tecnico PC, utente avanzato) che coll
 3. `[x] Verifica dopo il ripristino`
 4. "Ripristina" → conferma esplicita → avanzamento con "Annulla"
 
+**Tab 3 — Info**
+Nome e versione (da `wails.json`), descrizione delle funzioni, piattaforma, privilegi correnti, modalità sicura, percorso del file di configurazione, versioni di Go e Wails della build, autore, note sul formato `.img.zst` con il link a 7-Zip-zstd.
+
 **Impostazioni minime**: lingua (IT/EN).
 
 ## Criteri di accettazione

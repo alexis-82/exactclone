@@ -47,3 +47,13 @@ func TestCoded(t *testing.T) {
 		t.Fatal("code without detail")
 	}
 }
+
+func TestAppInfo(t *testing.T) {
+	info := appInfo()
+	if info.Name != "Disk Clone" || info.Version == "" || info.Author == "" {
+		t.Fatalf("product data not read from wails.json: %+v", info)
+	}
+	if info.OS == "" || info.Arch == "" || info.GoVersion == "" || info.ConfigPath == "" {
+		t.Fatalf("environment data missing: %+v", info)
+	}
+}

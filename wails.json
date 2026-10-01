@@ -9,5 +9,10 @@
   "author": {
     "name": "alexis-82",
     "email": "alessioabrugiati@gmail.com"
+  },
+  "info": {
+    "productName": "Disk Clone",
+    "productVersion": "1.0.0",
+    "comments": "Clonazione bit a bit di dischi e immagini .img.zst"
   }
 }

@@ -10,6 +10,10 @@ export function DestinationInfo(arg1) {
   return window['go']['main']['App']['DestinationInfo'](arg1);
 }
 
+export function GetAppInfo() {
+  return window['go']['main']['App']['GetAppInfo']();
+}
+
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }

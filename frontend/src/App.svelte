@@ -5,10 +5,11 @@
   import { EventsOn } from '../wailsjs/runtime/runtime'
   import BackupTab from './lib/BackupTab.svelte'
   import RestoreTab from './lib/RestoreTab.svelte'
+  import InfoTab from './lib/InfoTab.svelte'
   import ProgressPanel from './lib/ProgressPanel.svelte'
   import { idleJob, job, type JobState, type Snapshot } from './lib/job'
 
-  let tab = $state<'backup' | 'restore'>('backup')
+  let tab = $state<'backup' | 'restore' | 'info'>('backup')
   let elevated = $state(true)
   let devSafe = $state(false)
   let ready = $state(false)
@@ -89,12 +90,16 @@
   <button role="tab" aria-selected={tab === 'restore'} class:active={tab === 'restore'} onclick={() => (tab = 'restore')}>
     {$t('tabs.restore')}
   </button>
+  <button role="tab" aria-selected={tab === 'info'} class:active={tab === 'info'} onclick={() => (tab = 'info')}>
+    {$t('tabs.info')}
+  </button>
 </div>
 
 <main>
   {#if ready}
     <div hidden={tab !== 'backup'}><BackupTab {elevated} {devSafe} /></div>
     <div hidden={tab !== 'restore'}><RestoreTab {elevated} {devSafe} /></div>
+    <div hidden={tab !== 'info'}><InfoTab /></div>
   {/if}
 </main>
 
