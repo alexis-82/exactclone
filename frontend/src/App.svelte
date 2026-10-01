@@ -1,79 +1,104 @@
 <script lang="ts">
-  import logo from './assets/images/logo-universal.png'
-  import {Greet} from '../wailsjs/go/main/App.js'
+  import { onMount } from 'svelte'
+  import { t, lang, type Lang } from './i18n/i18n'
+  import { Cancel, GetConfig, IsDevSafe, IsElevated, SetLanguage } from '../wailsjs/go/main/App'
+  import { EventsOn } from '../wailsjs/runtime/runtime'
+  import BackupTab from './lib/BackupTab.svelte'
+  import RestoreTab from './lib/RestoreTab.svelte'
+  import ProgressPanel from './lib/ProgressPanel.svelte'
+  import { idleJob, job, type JobState, type Snapshot, type Warning } from './lib/job'
 
-  let resultText: string = "Please enter your name below 👇"
-  let name: string
+  let tab = $state<'backup' | 'restore'>('backup')
+  let elevated = $state(true)
+  let devSafe = $state(false)
+  let ready = $state(false)
 
-  function greet(): void {
-    Greet(name).then(result => resultText = result)
+  async function changeLanguage(l: Lang) {
+    lang.set(l)
+    try {
+      await SetLanguage(l)
+    } catch {
+      // the language still applies to this session
+    }
   }
+
+  function cancelJob() {
+    job.update((j) => ({ ...j, canceling: true }))
+    Cancel()
+  }
+
+  onMount(() => {
+    const offProgress = EventsOn('job:progress', (e: { kind: JobState['kind']; phase: string } & Snapshot) => {
+      job.update((j) => ({
+        ...j,
+        status: 'running',
+        kind: e.kind,
+        phase: e.phase,
+        snap: e,
+        phases: j.phases.includes(e.phase) ? j.phases : [...j.phases, e.phase],
+      }))
+    })
+    const offDone = EventsOn(
+      'job:done',
+      (e: { kind: JobState['kind']; status: JobState['status']; error?: string; notices?: string[]; warnings?: Warning[] }) => {
+        job.update((j) => ({
+          ...j,
+          status: e.status,
+          kind: e.kind,
+          error: e.error ?? '',
+          notices: e.notices ?? [],
+          warnings: e.warnings ?? [],
+          canceling: false,
+        }))
+      },
+    )
+    Promise.all([GetConfig(), IsElevated(), IsDevSafe()]).then(([cfg, el, ds]) => {
+      lang.set(cfg.language === 'en' ? 'en' : 'it')
+      elevated = el
+      devSafe = ds
+      ready = true
+    })
+    return () => {
+      offProgress()
+      offDone()
+    }
+  })
 </script>
 
+<header>
+  <h1>{$t('app.title')}</h1>
+  <label class="lang">
+    {$t('app.language')}
+    <select value={$lang} onchange={(e) => changeLanguage(e.currentTarget.value as Lang)}>
+      <option value="it">Italiano</option>
+      <option value="en">English</option>
+    </select>
+  </label>
+</header>
+
+{#if ready && !elevated}
+  <div class="banner danger" role="alert">{$t('banner.notElevated')}</div>
+{/if}
+{#if devSafe}
+  <div class="banner warn">{$t('banner.devSafe')}</div>
+{/if}
+
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected={tab === 'backup'} class:active={tab === 'backup'} onclick={() => (tab = 'backup')}>
+    {$t('tabs.backup')}
+  </button>
+  <button role="tab" aria-selected={tab === 'restore'} class:active={tab === 'restore'} onclick={() => (tab = 'restore')}>
+    {$t('tabs.restore')}
+  </button>
+</div>
+
 <main>
-  <img alt="Wails logo" id="logo" src="{logo}">
-  <div class="result" id="result">{resultText}</div>
-  <div class="input-box" id="input">
-    <input autocomplete="off" bind:value={name} class="input" id="name" type="text"/>
-    <button class="btn" on:click={greet}>Greet</button>
-  </div>
+  {#if ready}
+    <div hidden={tab !== 'backup'}><BackupTab {elevated} {devSafe} /></div>
+    <div hidden={tab !== 'restore'}><RestoreTab {elevated} /></div>
+  {/if}
 </main>
 
-<style>
-
-  #logo {
-    display: block;
-    width: 50%;
-    height: 50%;
-    margin: auto;
-    padding: 10% 0 0;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-origin: content-box;
-  }
-
-  .result {
-    height: 20px;
-    line-height: 20px;
-    margin: 1.5rem auto;
-  }
-
-  .input-box .btn {
-    width: 60px;
-    height: 30px;
-    line-height: 30px;
-    border-radius: 3px;
-    border: none;
-    margin: 0 0 0 20px;
-    padding: 0 8px;
-    cursor: pointer;
-  }
-
-  .input-box .btn:hover {
-    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-    color: #333333;
-  }
-
-  .input-box .input {
-    border: none;
-    border-radius: 3px;
-    outline: none;
-    height: 30px;
-    line-height: 30px;
-    padding: 0 10px;
-    background-color: rgba(240, 240, 240, 1);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .input-box .input:hover {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
-  }
-
-  .input-box .input:focus {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
-  }
-
-</style>
+{#if $job.status !== 'idle'}
+  <ProgressPanel job={$job} oncancel={cancelJob} onclose={() => job.set(idleJob)} />
+{/if}
