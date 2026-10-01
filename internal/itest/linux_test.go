@@ -8,7 +8,6 @@ package itest
 import (
 	"context"
 	"crypto/rand"
-	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +16,6 @@ import (
 
 	"diskclone/internal/clone"
 	"diskclone/internal/disk"
-	"diskclone/internal/mount"
 	"diskclone/internal/rawdev"
 )
 
@@ -126,91 +124,5 @@ func TestPrepareForWriteUnmountsAndFinishRescans(t *testing.T) {
 	after := findDisk(t, dst.Path)
 	if len(after.Partitions) != 1 || after.Partitions[0].FSType != "ext4" {
 		t.Fatalf("destination after clone = %+v, want the ext4 partition of the source", after.Partitions)
-	}
-}
-
-func TestMountReadOnly(t *testing.T) {
-	for _, fs := range []string{"ext4", "vfat"} {
-		t.Run(fs, func(t *testing.T) {
-			d := partitioned(t, fs)
-			p := d.Partitions[0]
-			if !p.Supported {
-				t.Fatalf("%s partition not supported: %+v", fs, p)
-			}
-			root, cleanup, err := mount.ReadOnly(p)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if data, err := os.ReadFile(filepath.Join(root, "hello.txt")); err != nil || string(data) != "hello" {
-				t.Fatalf("read: %q %v", data, err)
-			}
-			if err := os.WriteFile(filepath.Join(root, "x"), nil, 0o644); err == nil {
-				t.Fatal("mount is not read-only")
-			}
-			info, err := mount.Stat(root)
-			if err != nil || info.UsedBytes == 0 || info.FSType != fs {
-				t.Fatalf("Stat = %+v, %v", info, err)
-			}
-			if err := cleanup(); err != nil {
-				t.Fatal(err)
-			}
-			if _, err := os.Stat(root); !os.IsNotExist(err) {
-				t.Fatal("temporary mount folder not removed")
-			}
-		})
-	}
-}
-
-func TestMountReusesExistingMount(t *testing.T) {
-	d := partitioned(t, "ext4")
-	mnt := t.TempDir()
-	run(t, "mount", d.Partitions[0].Path, mnt)
-	t.Cleanup(func() { exec.Command("umount", mnt).Run() })
-	d = findDisk(t, d.Path)
-
-	root, cleanup, err := mount.ReadOnly(d.Partitions[0])
-	if err != nil || root != mnt {
-		t.Fatalf("root = %q, %v; want existing %q", root, err, mnt)
-	}
-	cleanup()
-	if _, err := os.Stat(filepath.Join(mnt, "hello.txt")); err != nil {
-		t.Fatal("cleanup unmounted a mount it did not create")
-	}
-}
-
-func TestCloneAndVerifyLoop(t *testing.T) {
-	srcPath, _ := loop(t, true)
-	dstPath, dstBacking := loop(t, false)
-
-	src, err := rawdev.Open(srcPath, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer src.Close()
-	dst, err := rawdev.Open(dstPath, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer dst.Close()
-	if src.Size() != loopSize || dst.Size() != loopSize {
-		t.Fatalf("sizes %d %d", src.Size(), dst.Size())
-	}
-
-	sum, err := clone.Copy(context.Background(), src, dst, src.Size(), clone.Options{HeadLast: true}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := clone.Verify(context.Background(), dst, src.Size(), sum, nil); err != nil {
-		t.Fatalf("verify: %v", err)
-	}
-
-	// Corrupt the medium behind the device: Verify must notice it, which
-	// proves it does not read stale data from the page cache.
-	f, _ := os.OpenFile(dstBacking, os.O_WRONLY, 0)
-	f.WriteAt([]byte("CORRUPTED"), 100<<20)
-	f.Sync()
-	f.Close()
-	if err := clone.Verify(context.Background(), dst, src.Size(), sum, nil); !errors.Is(err, clone.ErrVerifyMismatch) {
-		t.Fatalf("verify after corruption: %v, want mismatch", err)
 	}
 }

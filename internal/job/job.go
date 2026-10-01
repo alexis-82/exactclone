@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 
-	"diskclone/internal/archive"
 	"diskclone/internal/clone"
 	"diskclone/internal/progress"
 )
@@ -38,10 +37,9 @@ type ProgressEvent struct {
 	progress.Snapshot
 }
 
-// Result is what a job returns on success.
+// Result is what a job returns, also on failure.
 type Result struct {
-	Warnings []archive.Warning `json:"warnings"`
-	Notices  []string          `json:"notices"` // codes of informational messages
+	Notices []string `json:"notices"` // codes of informational messages
 }
 
 // DoneEvent is the payload of EventDone.
@@ -107,7 +105,7 @@ func (m *Manager) Start(kind string, fn Func) error {
 		switch {
 		case err == nil:
 			ev.Status = StatusDone
-		case ctx.Err() != nil || errors.Is(err, clone.ErrCanceled) || errors.Is(err, archive.ErrCanceled):
+		case ctx.Err() != nil || errors.Is(err, clone.ErrCanceled):
 			ev.Status = StatusCanceled
 		default:
 			ev.Status, ev.Error = StatusFailed, err.Error()

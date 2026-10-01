@@ -47,7 +47,7 @@ func TestJobLifecycle(t *testing.T) {
 	if m.Status() != StatusRunning {
 		t.Fatal("status must be running")
 	}
-	if err := m.Start("archive", nil); !errors.Is(err, ErrBusy) {
+	if err := m.Start("image", nil); !errors.Is(err, ErrBusy) {
 		t.Fatalf("second start: %v, want ErrBusy", err)
 	}
 	close(release)
@@ -63,7 +63,7 @@ func TestJobLifecycle(t *testing.T) {
 		t.Fatalf("last progress = %+v", last)
 	}
 	// A new job can start once the previous one has finished.
-	if err := m.Start("archive", func(context.Context, *Reporter) (Result, error) { return Result{}, nil }); err != nil {
+	if err := m.Start("image", func(context.Context, *Reporter) (Result, error) { return Result{}, nil }); err != nil {
 		t.Fatal(err)
 	}
 	m.Wait()

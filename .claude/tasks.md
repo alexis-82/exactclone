@@ -77,7 +77,7 @@
 
 > Superati dalla revisione 2 (codice rimosso, resta nella cronologia git): Task 7, 8, 9, 13 (solo `ReadOnly`), 19, 26, 29, 36, 38, 39, 41, 42 e i finding S1–S4 del secondo giro di review (tutti relativi al file a file).
 
-- [ ] Task 43: Rimuovere il file a file: pacchetto `internal/archive`, `mount.ReadOnly`, stima/cache dello spazio usato, partizioni e ripristino in cartella nella UI, relativi test e traduzioni — DoD: `go build`, `go vet` (Windows e Linux), `go test`, `npm run check` verdi; nessun riferimento a `tar`/`archive` nel codice.
+- [~] Task 43: Rimuovere il file a file: pacchetto `internal/archive`, `mount.ReadOnly`, stima/cache dello spazio usato, partizioni e ripristino in cartella nella UI, relativi test e traduzioni — DoD: `go build`, `go vet` (Windows e Linux), `go test`, `npm run check` verdi; nessun riferimento a `tar`/`archive` nel codice.
 - [ ] Task 44: Pacchetto `internal/image`: creazione `.img.zst` (frame skippable di intestazione, dati zstd tramite `clone.Copy`, chiusura con SHA-256), lettura delle informazioni, lettore sequenziale per il ripristino, verifica del file — DoD: test round trip, immagine alterata rilevata, file non valido rifiutato, annullamento, compatibilità 7-Zip-zstd.
 - [ ] Task 45: `disk.PrepareForRead` (blocca/smonta solo l'origine) per la creazione dell'immagine — DoD: vet Windows/Linux; coperto dai test di integrazione.
 - [ ] Task 46: Regole `validate.Image` (spazio ≥ dimensione disco, FAT32 > 4 GiB, file su partizione dell'origine, disco di sistema come origine) e `validate.RestoreImage` (destinazione ≥ immagine, non di sistema, modalità sicura) — DoD: test unitari per ogni regola.

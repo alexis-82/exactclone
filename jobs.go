@@ -4,15 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"os"
 	goruntime "runtime"
 
-	"diskclone/internal/archive"
 	"diskclone/internal/clone"
 	"diskclone/internal/disk"
 	"diskclone/internal/job"
-	"diskclone/internal/mount"
 	"diskclone/internal/rawdev"
 )
 
@@ -106,58 +102,4 @@ func cloneNotices(goos string, err error, gpt, destLarger bool) []string {
 		notices = append(notices, NoticeGPTBackupHeader)
 	}
 	return notices
-}
-
-func runArchive(ctx context.Context, r *job.Reporter, d disk.Disk, parts []disk.Partition, est Estimate, outPath string) (res job.Result, err error) {
-	m := archive.Manifest{SourceDisk: fmt.Sprintf("%s (%s)", d.Model, d.ID)}
-	var roots []archive.Root
-	for i, p := range parts {
-		root, cleanup, err := mount.ReadOnly(p)
-		if err != nil {
-			return res, coded("mount_failed", err)
-		}
-		defer cleanup()
-		name := rootName(i, p)
-		roots = append(roots, archive.Root{Name: name, Path: root})
-		var used uint64
-		for _, e := range est.Partitions {
-			if e.ID == p.ID {
-				used = e.UsedBytes
-			}
-		}
-		m.Partitions = append(m.Partitions, archive.ManifestPartition{Name: name, FSType: p.FSType, Label: p.Label, UsedBytes: used})
-	}
-	r.Phase("scan", 0)
-	total, err := archive.Scan(ctx, roots)
-	if err != nil {
-		return res, coded("archive_failed", err)
-	}
-	m.ContentBytes = total
-	r.Phase("archive", total)
-	warnings, err := archive.CreateFile(ctx, roots, m, outPath, r.Add)
-	res.Warnings = warnings
-	if err != nil {
-		return res, coded("archive_failed", err)
-	}
-	return res, nil
-}
-
-func runRestore(ctx context.Context, r *job.Reporter, archivePath, destDir string) (res job.Result, err error) {
-	fi, err := os.Stat(archivePath)
-	if err != nil {
-		return res, coded("restore_failed", err)
-	}
-	r.Phase("restore", fi.Size())
-	warnings, err := archive.Extract(ctx, archivePath, destDir, r.Add)
-	res.Warnings = warnings
-	switch {
-	case err == nil:
-		return res, nil
-	case errors.Is(err, archive.ErrUnsafePath):
-		return res, coded("unsafe_archive", err)
-	case errors.Is(err, archive.ErrNotDiskcloneArchive):
-		return res, coded("not_diskclone_archive", err)
-	default:
-		return res, coded("restore_failed", err)
-	}
 }

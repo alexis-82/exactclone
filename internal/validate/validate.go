@@ -6,21 +6,18 @@ import (
 	"strings"
 
 	"diskclone/internal/disk"
-	"diskclone/internal/mount"
 )
 
 // Error codes, translated by the frontend (errors.<code>).
 const (
-	CodeSameDisk             = "same_disk"
-	CodeDestSystem           = "dest_system"
-	CodeDestTooSmall         = "dest_too_small"
-	CodeDevSafe              = "dev_safe_not_external"
-	CodeNoPartition          = "no_partition"
-	CodePartitionUnsupported = "partition_unsupported"
-	CodeDestOnSource         = "dest_on_source"
-	CodeInsufficientSpace    = "insufficient_space"
-	CodeFAT32Limit           = "fat32_limit"
-	CodeNotElevated          = "not_elevated"
+	CodeSameDisk          = "same_disk"
+	CodeDestSystem        = "dest_system"
+	CodeDestTooSmall      = "dest_too_small"
+	CodeDevSafe           = "dev_safe_not_external"
+	CodeDestOnSource      = "dest_on_source"
+	CodeInsufficientSpace = "insufficient_space"
+	CodeFAT32Limit        = "fat32_limit"
+	CodeNotElevated       = "not_elevated"
 )
 
 // Error is a rule violation identified by a code.
@@ -46,39 +43,6 @@ func Clone(src, dst disk.Disk, devSafe bool) error {
 		return fail(CodeDestTooSmall)
 	case devSafe && !devSafeBuses[dst.Bus]:
 		return fail(CodeDevSafe)
-	}
-	return nil
-}
-
-// Archive checks a file-by-file backup of parts into the folder destDir,
-// whose file system is described by dest; estimate is the archive size.
-func Archive(parts []disk.Partition, destDir string, dest mount.Info, estimate uint64) error {
-	if len(parts) == 0 {
-		return fail(CodeNoPartition)
-	}
-	for _, p := range parts {
-		if !p.Supported {
-			return fail(CodePartitionUnsupported)
-		}
-		for _, m := range append(append([]string{}, p.MountPoints...), p.Path) {
-			if m != "" && isUnder(destDir, m) {
-				return fail(CodeDestOnSource) // the archive would contain itself
-			}
-		}
-	}
-	if dest.FreeBytes < estimate {
-		return fail(CodeInsufficientSpace)
-	}
-	if max := mount.MaxFileSize(dest.FSType); max > 0 && estimate > max {
-		return fail(CodeFAT32Limit)
-	}
-	return nil
-}
-
-// Restore checks the extraction of an archive whose content needs `needed` bytes.
-func Restore(dest mount.Info, needed uint64) error {
-	if dest.FreeBytes < needed {
-		return fail(CodeInsufficientSpace)
 	}
 	return nil
 }

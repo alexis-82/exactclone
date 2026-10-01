@@ -17,10 +17,8 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"diskclone/internal/archive"
 	"diskclone/internal/clone"
 	"diskclone/internal/disk"
-	"diskclone/internal/mount"
 	"diskclone/internal/rawdev"
 )
 
@@ -135,51 +133,5 @@ func TestCloneGPTWithMountedVolumes(t *testing.T) {
 	}
 	if !isOffline(t, dst) {
 		t.Fatal("destination must stay offline after the clone")
-	}
-}
-
-func TestArchiveVolumeWithoutLetter(t *testing.T) {
-	src := vhd(t, sourceLayout)
-	var noLetter disk.Partition
-	for _, p := range src.Partitions {
-		if p.Label == "NOLETTER" {
-			noLetter = p
-		}
-	}
-	if noLetter.Path == "" || len(noLetter.MountPoints) != 0 {
-		t.Fatalf("NOLETTER partition = %+v", noLetter)
-	}
-	root, cleanup, err := mount.ReadOnly(noLetter)
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.WriteFile(filepath.Join(root, "hello.txt"), []byte("hello"), 0o644)
-	info, err := mount.Stat(root)
-	if err != nil || info.FSType != "ntfs" || info.UsedBytes == 0 {
-		t.Fatalf("Stat = %+v, %v", info, err)
-	}
-	out := filepath.Join(t.TempDir(), "a.tar.zst")
-	if _, err := archive.CreateFile(context.Background(), []archive.Root{{Name: "NOLETTER", Path: root}}, archive.Manifest{}, out, nil); err != nil {
-		t.Fatal(err)
-	}
-	if err := cleanup(); err != nil {
-		t.Fatal(err)
-	}
-	dest := t.TempDir()
-	if _, err := archive.Extract(context.Background(), out, dest, nil); err != nil {
-		t.Fatal(err)
-	}
-	if data, _ := os.ReadFile(filepath.Join(dest, "NOLETTER", "hello.txt")); string(data) != "hello" {
-		t.Fatal("file not restored")
-	}
-	after, _ := disk.List()
-	for _, d := range after {
-		if d.ID == src.ID {
-			for _, p := range d.Partitions {
-				if p.Label == "NOLETTER" && len(p.MountPoints) != 0 {
-					t.Fatalf("a drive letter was left assigned: %v", p.MountPoints)
-				}
-			}
-		}
 	}
 }

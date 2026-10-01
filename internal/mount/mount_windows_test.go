@@ -31,36 +31,6 @@ func systemPartition(t *testing.T) disk.Partition {
 	return disk.Partition{}
 }
 
-func TestReadOnlyUsesDriveLetter(t *testing.T) {
-	p := systemPartition(t)
-	root, cleanup, err := ReadOnly(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer cleanup()
-	if !strings.EqualFold(root, os.Getenv("SystemDrive")+`\`) {
-		t.Fatalf("root = %q", root)
-	}
-}
-
-func TestReadOnlyVolumeWithoutLetter(t *testing.T) {
-	p := systemPartition(t)
-	p.MountPoints = nil
-	root, cleanup, err := ReadOnly(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if root != p.Path {
-		t.Fatalf("root = %q, want GUID path %q", root, p.Path)
-	}
-	if _, err := os.Stat(filepath.Join(root, "Windows", "win.ini")); err != nil {
-		t.Fatalf("cannot read through GUID path: %v", err)
-	}
-	if err := cleanup(); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestStat(t *testing.T) {
 	p := systemPartition(t)
 	byLetter, err := Stat(os.Getenv("SystemDrive") + `\`)
