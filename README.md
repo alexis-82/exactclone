@@ -8,6 +8,8 @@ Applicazione desktop (Go + Wails v2 + Svelte) per Windows e Linux:
 
 Richiede privilegi di amministratore (Windows) o root (Linux).
 
+Guida completa a compilazione e installazione: [docs/INSTALLAZIONE.md](docs/INSTALLAZIONE.md).
+
 ## Requisiti di sviluppo
 
 - Go ≥ 1.22, Node.js ≥ 20, Wails CLI v2: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
