@@ -205,16 +205,25 @@ func (a *App) StartRestore(archivePath, destDir string) error {
 	if err != nil {
 		return coded("stat_failed", err)
 	}
-	var needed uint64
-	for _, p := range m.Partitions {
-		needed += p.UsedBytes
-	}
-	if err := validate.Restore(info, needed); err != nil {
+	if err := validate.Restore(info, restoreNeeded(m)); err != nil {
 		return err
 	}
 	return a.start("restore", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
 		return runRestore(ctx, r, archivePath, destDir)
 	})
+}
+
+// restoreNeeded is the space needed to extract an archive: the apparent size
+// of its files (sparse files are written in full).
+func restoreNeeded(m archive.Manifest) uint64 {
+	if m.ContentBytes > 0 {
+		return uint64(m.ContentBytes)
+	}
+	var used uint64
+	for _, p := range m.Partitions {
+		used += p.UsedBytes
+	}
+	return used
 }
 
 func (a *App) start(kind string, fn job.Func) error {

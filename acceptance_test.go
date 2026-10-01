@@ -116,7 +116,10 @@ func TestCA3ArchiveAndRestore(t *testing.T) {
 	fat := fakePartition(t, "p2", "USB KEY", "vfat", map[string]int{"README.TXT": 10, "DIR/SUB/FILE.DAT": 70000})
 	src := disk.Disk{ID: "sdz", Model: "Test Disk", Partitions: []disk.Partition{ntfs, fat}}
 	out := filepath.Join(t.TempDir(), "backup.tar.zst")
-	est := Estimate{TotalBytes: 1200 + 3<<20 + 42 + 10 + 70000, Partitions: []PartitionEstimate{{"p1", 100}, {"p2", 200}}}
+	contentBytes := int64(1200 + 3<<20 + 42 + 10 + 70000)
+	// File-system used space differs from the file sizes (metadata, sparse
+	// files): the progress total must come from the scan, not from here.
+	est := Estimate{TotalBytes: 999, Partitions: []PartitionEstimate{{"p1", 100}, {"p2", 200}}}
 
 	ev := &events{}
 	done := runJob(t, ev, "archive", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
@@ -126,8 +129,11 @@ func TestCA3ArchiveAndRestore(t *testing.T) {
 		t.Fatalf("archive job = %+v", done)
 	}
 	lastProg := ev.progress[len(ev.progress)-1]
-	if lastProg.Phase != "archive" || lastProg.Done != int64(est.TotalBytes) || lastProg.Percent != 100 {
+	if lastProg.Phase != "archive" || lastProg.Done != contentBytes || lastProg.Total != contentBytes || lastProg.Percent != 100 {
 		t.Fatalf("final progress = %+v", lastProg)
+	}
+	if ev.progress[0].Phase != "scan" {
+		t.Fatalf("first phase = %q, want scan", ev.progress[0].Phase)
 	}
 
 	m, err := archive.ReadManifest(out)
@@ -135,7 +141,8 @@ func TestCA3ArchiveAndRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(m.Partitions) != 2 || m.Partitions[0].Name != "part1_DATI" || m.Partitions[1].Name != "part2_USB_KEY" ||
-		m.Partitions[0].FSType != "ntfs" || m.Partitions[1].UsedBytes != 200 || !strings.Contains(m.SourceDisk, "Test Disk") {
+		m.Partitions[0].FSType != "ntfs" || m.Partitions[1].UsedBytes != 200 || !strings.Contains(m.SourceDisk, "Test Disk") ||
+		m.ContentBytes != contentBytes {
 		t.Fatalf("manifest = %+v", m)
 	}
 

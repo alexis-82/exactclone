@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"diskclone/internal/archive"
 	"diskclone/internal/disk"
 )
 
@@ -19,6 +20,17 @@ func TestRootName(t *testing.T) {
 		if got := rootName(0, disk.Partition{Label: c.label}); got != c.want {
 			t.Errorf("rootName(%q) = %q, want %q", c.label, got, c.want)
 		}
+	}
+}
+
+func TestRestoreNeeded(t *testing.T) {
+	m := archive.Manifest{ContentBytes: 500, Partitions: []archive.ManifestPartition{{UsedBytes: 10}, {UsedBytes: 20}}}
+	if got := restoreNeeded(m); got != 500 {
+		t.Fatalf("needed = %d, want the apparent size 500", got)
+	}
+	m.ContentBytes = 0
+	if got := restoreNeeded(m); got != 30 {
+		t.Fatalf("needed = %d, want the used-space fallback 30", got)
 	}
 }
 

@@ -39,10 +39,13 @@ type Root struct {
 
 // Manifest describes an archive; it is stored as its first entry.
 type Manifest struct {
-	Version    int                 `json:"version"`
-	CreatedAt  time.Time           `json:"createdAt"`
-	SourceDisk string              `json:"sourceDisk"`
-	Partitions []ManifestPartition `json:"partitions"`
+	Version   int       `json:"version"`
+	CreatedAt time.Time `json:"createdAt"`
+	// ContentBytes is the apparent size of all archived files (see Scan):
+	// the space needed to restore them, sparse files included.
+	ContentBytes int64               `json:"contentBytes"`
+	SourceDisk   string              `json:"sourceDisk"`
+	Partitions   []ManifestPartition `json:"partitions"`
 }
 
 type ManifestPartition struct {
@@ -122,9 +125,26 @@ type creator struct {
 	buf        []byte
 	links      map[fileKey]string // hard links already stored: file id -> archive name
 	warnings   []Warning
+	scanOnly   bool  // Scan: only sum the file sizes
+	total      int64 // Scan result
+}
+
+// Scan walks roots exactly like Create, without reading file contents, and
+// returns the total size of the files Create would store.
+func Scan(ctx context.Context, roots []Root) (int64, error) {
+	c := &creator{ctx: ctx, links: map[fileKey]string{}, scanOnly: true}
+	for _, r := range roots {
+		if err := c.addRoot(r); err != nil {
+			return 0, err
+		}
+	}
+	return c.total, nil
 }
 
 func (c *creator) warn(p, reason string) {
+	if c.scanOnly {
+		return // reported by Create
+	}
 	c.warnings = append(c.warnings, Warning{Path: p, Reason: reason})
 }
 
@@ -181,6 +201,9 @@ func (c *creator) addRoot(r Root) error {
 		}
 		switch {
 		case d.IsDir():
+			if c.scanOnly {
+				return nil
+			}
 			return c.writeHeader(fi, name+"/", "")
 		case d.Type()&fs.ModeSymlink != 0:
 			c.addLink(p, name, fi)
@@ -195,6 +218,9 @@ func (c *creator) addRoot(r Root) error {
 }
 
 func (c *creator) addLink(p, name string, fi fs.FileInfo) {
+	if c.scanOnly {
+		return
+	}
 	target, err := os.Readlink(p)
 	if err != nil {
 		c.warn(p, "skipped link: "+err.Error())
@@ -219,6 +245,9 @@ func (c *creator) writeHeader(fi fs.FileInfo, name, link string) error {
 func (c *creator) addFile(p, name string, fi fs.FileInfo) error {
 	if key, ok := hardLinkKey(fi); ok {
 		if first, seen := c.links[key]; seen {
+			if c.scanOnly {
+				return nil
+			}
 			hdr, err := tar.FileInfoHeader(fi, "")
 			if err != nil {
 				return err
@@ -228,6 +257,10 @@ func (c *creator) addFile(p, name string, fi fs.FileInfo) error {
 			return c.tw.WriteHeader(hdr)
 		}
 		c.links[key] = name
+	}
+	if c.scanOnly {
+		c.total += fi.Size()
+		return nil
 	}
 	f, err := openFile(p)
 	if err != nil {

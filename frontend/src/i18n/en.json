@@ -60,6 +60,7 @@
   "progress.restore": "Restoring",
   "progress.phase.copy": "Copy",
   "progress.phase.verify": "Verify",
+  "progress.phase.scan": "Scanning files",
   "progress.phase.archive": "Archiving",
   "progress.phase.restore": "Extracting",
   "progress.bytes": "{done} of {total}",

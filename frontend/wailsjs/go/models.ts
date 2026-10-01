@@ -22,6 +22,7 @@ export namespace archive {
 	    version: number;
 	    // Go type: time
 	    createdAt: any;
+	    contentBytes: number;
 	    sourceDisk: string;
 	    partitions: ManifestPartition[];
 	
@@ -33,6 +34,7 @@ export namespace archive {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.version = source["version"];
 	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.contentBytes = source["contentBytes"];
 	        this.sourceDisk = source["sourceDisk"];
 	        this.partitions = this.convertValues(source["partitions"], ManifestPartition);
 	    }

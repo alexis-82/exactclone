@@ -257,6 +257,37 @@ func TestCreateSurvivesShrinkingAndUnreadableFiles(t *testing.T) {
 	}
 }
 
+// Review R4/R6: Scan returns exactly the bytes Create reads (the progress
+// total) and counts sparse files at their apparent size.
+func TestScanMatchesCreate(t *testing.T) {
+	src := t.TempDir()
+	writeTree(t, src, map[string]int{"a.txt": 1234, "d/b.bin": 70000, "d/e/empty": 0})
+	sparse := filepath.Join(src, "vm.img")
+	f, _ := os.Create(sparse)
+	f.Truncate(64 << 20) // apparent 64 MiB, (almost) nothing allocated on Linux
+	f.Close()
+	if err := os.Symlink("a.txt", filepath.Join(src, "link")); err != nil {
+		t.Log("no symlink in this run:", err)
+	}
+	roots := []Root{{Name: "p", Path: src}}
+
+	total, err := Scan(context.Background(), roots)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := int64(1234 + 70000 + 64<<20); total != want {
+		t.Fatalf("Scan = %d, want %d", total, want)
+	}
+	var read int64
+	warns, err := CreateFile(context.Background(), roots, Manifest{ContentBytes: total}, filepath.Join(t.TempDir(), "a.tar.zst"), func(n int64) { read += n })
+	if err != nil || len(warns) != 0 {
+		t.Fatalf("err = %v, warnings = %v", err, warns)
+	}
+	if read != total {
+		t.Fatalf("Create read %d bytes, Scan said %d", read, total)
+	}
+}
+
 func TestCreateFileDoesNotOverwrite(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "exists.tar.zst")
 	os.WriteFile(out, []byte("keep"), 0o644)

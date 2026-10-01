@@ -108,7 +108,13 @@ func runArchive(ctx context.Context, r *job.Reporter, d disk.Disk, parts []disk.
 		}
 		m.Partitions = append(m.Partitions, archive.ManifestPartition{Name: name, FSType: p.FSType, Label: p.Label, UsedBytes: used})
 	}
-	r.Phase("archive", int64(est.TotalBytes))
+	r.Phase("scan", 0)
+	total, err := archive.Scan(ctx, roots)
+	if err != nil {
+		return res, coded("archive_failed", err)
+	}
+	m.ContentBytes = total
+	r.Phase("archive", total)
 	warnings, err := archive.CreateFile(ctx, roots, m, outPath, r.Add)
 	res.Warnings = warnings
 	if err != nil {

@@ -15,7 +15,11 @@
   let error = $state<{ message: string; detail: string } | null>(null)
   let confirming = $state(false)
 
-  const needed = $derived((manifest?.partitions ?? []).reduce((sum, p) => sum + p.usedBytes, 0))
+  // Apparent size of the archived files (sparse files are restored in full);
+  // archives without it fall back to the used space of the partitions.
+  const needed = $derived(
+    manifest?.contentBytes || (manifest?.partitions ?? []).reduce((sum, p) => sum + p.usedBytes, 0),
+  )
   const canStart = $derived(elevated && !!manifest && !!destDir && !!destInfo && destInfo.freeBytes >= needed)
 
   async function chooseArchive() {

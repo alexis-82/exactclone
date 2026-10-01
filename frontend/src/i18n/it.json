@@ -60,6 +60,7 @@
   "progress.restore": "Ripristino in corso",
   "progress.phase.copy": "Copia",
   "progress.phase.verify": "Verifica",
+  "progress.phase.scan": "Analisi dei file",
   "progress.phase.archive": "Archiviazione",
   "progress.phase.restore": "Estrazione",
   "progress.bytes": "{done} di {total}",

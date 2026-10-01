@@ -13,7 +13,10 @@
   <div class="dialog" role="dialog" aria-modal="true" aria-live="polite">
     {#if job.status === 'running'}
       <h2>{$t(`progress.${job.kind}`)}</h2>
-      {#if job.snap}
+      {#if job.snap && job.snap.total === 0}
+        <p class="phase">{$t(`progress.phase.${job.phase}`)}…</p>
+        <progress></progress>
+      {:else if job.snap}
         <p class="phase">{$t(`progress.phase.${job.phase}`)} — {job.snap.percent.toFixed(1)}%</p>
         <progress max="100" value={job.snap.percent}></progress>
         <p>{$t('progress.bytes', { done: formatBytes(job.snap.done), total: formatBytes(job.snap.total) })}</p>
