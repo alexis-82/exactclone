@@ -5,8 +5,8 @@ package disk
 
 // Disk is a physical block device (whole disk, not a partition).
 type Disk struct {
-	ID         string      `json:"id"`         // stable id used by the UI (e.g. "sdb", "PhysicalDrive2")
-	Path       string      `json:"path"`       // raw device path (/dev/sdb, \\.\PhysicalDrive2)
+	ID         string      `json:"id"`   // stable id used by the UI (e.g. "sdb", "PhysicalDrive2")
+	Path       string      `json:"path"` // raw device path (/dev/sdb, \\.\PhysicalDrive2)
 	Model      string      `json:"model"`
 	Serial     string      `json:"serial"`
 	Bus        string      `json:"bus"` // usb, sata, nvme, ...
