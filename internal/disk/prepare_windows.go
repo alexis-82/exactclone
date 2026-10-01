@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
+	"time"
 
 	"golang.org/x/sys/windows"
 )
@@ -40,48 +41,71 @@ func PrepareForWrite(src, dst Disk) (release func(), err error) {
 	return release, nil
 }
 
-func lockDisks(disks ...Disk) (release func(), err error) {
+func lockDisks(disks ...Disk) (func(), error) {
 	var locked []windows.Handle
-	release = func() {
+	closeAll := func() {
 		for _, h := range locked {
 			windows.CloseHandle(h)
 		}
 	}
-	defer func() {
-		if err != nil {
-			release()
-		}
-	}()
 	for _, d := range disks {
 		for _, p := range d.Partitions {
 			if !strings.HasPrefix(p.Path, `\\?\Volume{`) {
 				continue // partition without a volume: nothing to lock
 			}
-			h, err := lockVolume(p.Path)
+			h, err := lockVolume(p.Path, p.MountPoints)
 			if err != nil {
+				closeAll()
 				return nil, err
 			}
 			locked = append(locked, h)
 		}
 	}
-	return release, nil
+	return closeAll, nil
 }
 
-func lockVolume(guidPath string) (windows.Handle, error) {
+// Lock attempts before forcing the dismount: a volume that has just been
+// mounted is often held open for a moment (Explorer/AutoPlay, indexing,
+// antivirus).
+const (
+	lockAttempts = 20
+	lockDelay    = 250 * time.Millisecond
+)
+
+// lockVolume locks and dismounts a volume. If it stays in use, the volume is
+// force-dismounted (other processes' handles become invalid) and locked again.
+func lockVolume(guidPath string, mountPoints []string) (windows.Handle, error) {
+	name := guidPath
+	if len(mountPoints) > 0 {
+		name = mountPoints[0] + " (" + guidPath + ")"
+	}
 	p, _ := windows.UTF16PtrFromString(strings.TrimSuffix(guidPath, `\`))
 	h, err := windows.CreateFile(p, windows.GENERIC_READ|windows.GENERIC_WRITE,
 		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil, windows.OPEN_EXISTING, 0, 0)
 	if err != nil {
-		return 0, fmt.Errorf("open volume %s: %w", guidPath, err)
+		return 0, fmt.Errorf("open volume %s: %w", name, err)
 	}
 	var n uint32
-	if err := windows.DeviceIoControl(h, fsctlLockVolume, nil, 0, nil, 0, &n, nil); err != nil {
-		windows.CloseHandle(h)
-		return 0, fmt.Errorf("volume %s is in use (lock failed): %w", guidPath, err)
+	ioctl := func(code uint32) error { return windows.DeviceIoControl(h, code, nil, 0, nil, 0, &n, nil) }
+
+	err = ioctl(fsctlLockVolume)
+	for i := 1; err != nil && i < lockAttempts; i++ {
+		time.Sleep(lockDelay)
+		err = ioctl(fsctlLockVolume)
 	}
-	if err := windows.DeviceIoControl(h, fsctlDismountVolume, nil, 0, nil, 0, &n, nil); err != nil {
+	if err != nil {
+		if derr := ioctl(fsctlDismountVolume); derr != nil {
+			windows.CloseHandle(h)
+			return 0, fmt.Errorf("volume %s is in use and cannot be dismounted: %w", name, derr)
+		}
+		if err = ioctl(fsctlLockVolume); err != nil {
+			windows.CloseHandle(h)
+			return 0, fmt.Errorf("volume %s is in use (lock failed after forced dismount): %w", name, err)
+		}
+	}
+	if err := ioctl(fsctlDismountVolume); err != nil {
 		windows.CloseHandle(h)
-		return 0, fmt.Errorf("dismount volume %s: %w", guidPath, err)
+		return 0, fmt.Errorf("dismount volume %s: %w", name, err)
 	}
 	return h, nil
 }
