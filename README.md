@@ -12,7 +12,7 @@ Guida completa a compilazione e installazione: [docs/INSTALLAZIONE.md](docs/INST
 
 ## Requisiti di sviluppo
 
-- Go ≥ 1.22, Node.js ≥ 20, Wails CLI v2: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
+- Go ≥ 1.25, Node.js 22 LTS (minimo 20.19), Wails CLI v2: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
 - Windows: WebView2 (già presente su Windows 10/11)
 - Linux: `libgtk-3-dev libwebkit2gtk-4.1-dev build-essential pkg-config`
 
