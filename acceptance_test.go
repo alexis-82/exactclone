@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -265,6 +266,48 @@ func TestCA7CancelArchive(t *testing.T) {
 	m.Wait()
 	if d := time.Since(start); d > 5*time.Second {
 		t.Fatalf("cancel took %v", d)
+	}
+	if got := ev.last().Status; got != job.StatusCanceled {
+		t.Fatalf("status = %s, want canceled", got)
+	}
+	if _, err := os.Stat(out); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("partial archive was not deleted")
+	}
+}
+
+// CA7: same as above, but canceling once bytes are being written to the
+// archive (after the scan phase): the partial file must be deleted.
+func TestCA7CancelWhileWritingArchive(t *testing.T) {
+	files := map[string]int{}
+	for i := 0; i < 40; i++ {
+		files[fmt.Sprintf("big/f%02d.bin", i)] = 4 << 20
+	}
+	part := fakePartition(t, "p1", "", "ntfs", files)
+	src := disk.Disk{ID: "sdz", Partitions: []disk.Partition{part}}
+	out := filepath.Join(t.TempDir(), "partial.tar.zst")
+
+	ev := &events{}
+	m := job.NewManager(ev.emit)
+	var once sync.Once
+	var sawFile bool
+	ev.onProg = func() {
+		ev.mu.Lock()
+		last := ev.progress[len(ev.progress)-1]
+		ev.mu.Unlock()
+		if last.Phase == "archive" && last.Done > 0 {
+			once.Do(func() {
+				_, err := os.Stat(out)
+				sawFile = err == nil
+				go m.Cancel()
+			})
+		}
+	}
+	m.Start("archive", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runArchive(ctx, r, src, src.Partitions, Estimate{}, out)
+	})
+	m.Wait()
+	if !sawFile {
+		t.Fatal("cancel did not happen while the archive file was being written")
 	}
 	if got := ev.last().Status; got != job.StatusCanceled {
 		t.Fatalf("status = %s, want canceled", got)

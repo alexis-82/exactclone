@@ -4,6 +4,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"golang.org/x/sys/windows/registry"
 )
 
 // Runs without admin rights: the partition table is then read from volumes only.
@@ -59,14 +61,25 @@ func TestBootSystemPartitionDisk(t *testing.T) {
 			t.Fatalf("boot disk %d not marked as system", d)
 		}
 	}
-	found := false
-	for _, v := range vols {
-		if boot[v.disk] && strings.HasPrefix(ntDeviceName(v.guidPath), `\Device\HarddiskVolume`) {
-			found = true
+	// The resolved volume must be the boot partition itself: FAT32 on UEFI
+	// machines, NTFS ("System Reserved") on BIOS ones.
+	k, _ := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\Setup`, registry.QUERY_VALUE)
+	device, _, _ := k.GetStringValue("SystemPartition")
+	k.Close()
+	var bootVol *volume
+	for i, v := range vols {
+		if strings.EqualFold(ntDeviceName(v.guidPath), device) {
+			bootVol = &vols[i]
 		}
 	}
-	if !found {
-		t.Fatal("NT device names not resolved")
+	if bootVol == nil || (bootVol.fs != "vfat" && bootVol.fs != "ntfs") {
+		t.Fatalf("SystemPartition %s resolved to %+v", device, bootVol)
+	}
+	t.Logf("SystemPartition %s = %s (%s) on disk %d", device, bootVol.guidPath, bootVol.fs, bootVol.disk)
+
+	cDisks := systemDiskNumbers(nil) // without volumes only C: is considered
+	if cDisks[bootVol.disk] {
+		t.Logf("LIMIT: the boot partition is on the same disk as %s here, so this machine cannot show the multi-disk case", os.Getenv("SystemDrive"))
 	}
 }
 
