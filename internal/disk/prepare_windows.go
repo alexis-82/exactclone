@@ -16,11 +16,31 @@ const (
 	diskAttributeOffline       = 0x1
 )
 
+// PrepareForRead locks and dismounts every volume of src, so it does not
+// change while it is copied into an image. release closes the locks; Windows
+// remounts the volumes on the next access.
+func PrepareForRead(src Disk) (release func(), err error) {
+	return lockDisks(src)
+}
+
 // PrepareForWrite locks and dismounts every volume of src and dst (so neither
 // changes during the copy) and takes dst offline, so Windows does not mount
 // the new partitions while the partition table is being written. release
 // closes the volume locks; dst stays offline on purpose (see FinishWrite).
+// src may be an empty Disk (restore from an image).
 func PrepareForWrite(src, dst Disk) (release func(), err error) {
+	release, err = lockDisks(src, dst)
+	if err != nil {
+		return nil, err
+	}
+	if err := setOffline(dst.Path, true); err != nil {
+		release()
+		return nil, err
+	}
+	return release, nil
+}
+
+func lockDisks(disks ...Disk) (release func(), err error) {
 	var locked []windows.Handle
 	release = func() {
 		for _, h := range locked {
@@ -32,7 +52,7 @@ func PrepareForWrite(src, dst Disk) (release func(), err error) {
 			release()
 		}
 	}()
-	for _, d := range []Disk{src, dst} {
+	for _, d := range disks {
 		for _, p := range d.Partitions {
 			if !strings.HasPrefix(p.Path, `\\?\Volume{`) {
 				continue // partition without a volume: nothing to lock
@@ -43,9 +63,6 @@ func PrepareForWrite(src, dst Disk) (release func(), err error) {
 			}
 			locked = append(locked, h)
 		}
-	}
-	if err := setOffline(dst.Path, true); err != nil {
-		return nil, err
 	}
 	return release, nil
 }
