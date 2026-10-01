@@ -197,7 +197,7 @@ func TestVerifyCanceled(t *testing.T) {
 
 func TestAlignedBuf(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		b := alignedBuf(5000 + i)
+		b := AlignedBuf(5000 + i)
 		if len(b) != 5000+i {
 			t.Fatal("wrong length")
 		}

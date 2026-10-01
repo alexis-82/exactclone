@@ -61,8 +61,9 @@ type chunk struct {
 	refs atomic.Int32
 }
 
-// alignedBuf returns a slice of length size whose first byte is aligned to alignment.
-func alignedBuf(size int) []byte {
+// AlignedBuf returns a slice of length size whose first byte is aligned to
+// 4096 bytes, as required by unbuffered raw disk I/O on Windows.
+func AlignedBuf(size int) []byte {
 	raw := make([]byte, size+alignment)
 	shift := 0
 	if r := int(uintptr(unsafe.Pointer(&raw[0])) % alignment); r != 0 {
@@ -86,7 +87,7 @@ func newPipeline(parent context.Context, blockSize int) *pipeline {
 	ctx, cancel := context.WithCancel(parent)
 	p := &pipeline{ctx: ctx, cancel: cancel, pool: make(chan []byte, numBuffers)}
 	for i := 0; i < numBuffers; i++ {
-		p.pool <- alignedBuf(blockSize)
+		p.pool <- AlignedBuf(blockSize)
 	}
 	return p
 }
@@ -193,7 +194,7 @@ func Copy(ctx context.Context, src io.ReaderAt, dst io.WriterAt, size int64, opt
 
 	write := func(c *chunk) error {
 		if opts.HeadLast && c.off == 0 {
-			head = alignedBuf(len(c.buf))
+			head = AlignedBuf(len(c.buf))
 			copy(head, c.buf)
 			return nil
 		}

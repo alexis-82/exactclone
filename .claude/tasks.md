@@ -37,10 +37,10 @@
 
 ## Fase 4 — Livello applicativo
 
-- [ ] Task 20: `privilege.IsElevated()` (token amministratore su Windows, `euid==0` su Linux) — DoD: restituisce false/true eseguendo l'app senza e con privilegi.
-- [ ] Task 21: `validate` (origine≠destinazione, destinazione non di sistema, destinazione ≥ origine, spazio libero ≥ stima, archivio stimato > 4 GiB − 1 su destinazione FAT32 bloccato (F5), almeno una partizione selezionata, flag `DISKCLONE_DEV_SAFE` = solo dischi rimovibili) con codici di errore; le regole sono richiamate **anche** nei binding Go prima di avviare ogni job, non solo nella UI (F10) — DoD: test unitari per ogni regola.
-- [ ] Task 22: `job.Manager` (un job alla volta, `Cancel()`, stati idle/running/done/failed/canceled, eventi `job:progress`/`job:done` via Wails runtime) — DoD: test con job finto: un secondo avvio durante un job è rifiutato; annulla porta allo stato `canceled`.
-- [ ] Task 23: Binding in `app.go`: `ListDisks`, `IsElevated`, `StartClone`, `StartArchive`, `StartRestore`, `Cancel`, `PickSaveFile`, `PickArchive`, `PickFolder`, `GetConfig`/`SetLanguage`; ogni `Start*` ri-valida con `validate`; frontend solo con asset embedded, CSP restrittiva, link esterni via `BrowserOpenURL`, devtools disattivati in build (F10) — DoD: `wails dev` genera i binding TS; chiamata a `ListDisks` dal frontend restituisce i dischi reali.
+- [x] Task 20: `privilege.IsElevated()` (token amministratore su Windows, `euid==0` su Linux) — DoD: restituisce false/true eseguendo l'app senza e con privilegi.
+- [x] Task 21: `validate` (origine≠destinazione, destinazione non di sistema, destinazione ≥ origine, spazio libero ≥ stima, archivio stimato > 4 GiB − 1 su destinazione FAT32 bloccato (F5), almeno una partizione selezionata, flag `DISKCLONE_DEV_SAFE` = solo dischi rimovibili) con codici di errore; le regole sono richiamate **anche** nei binding Go prima di avviare ogni job, non solo nella UI (F10) — DoD: test unitari per ogni regola. **Nota impl.:** dev-safe filtra per bus (usb/loop/virtual) invece del flag rimovibile, perche Windows segnala come rimovibile anche l'SSD SATA di sistema; aggiunta regola dest_on_source (archivio salvato dentro una partizione selezionata).
+- [x] Task 22: `job.Manager` (un job alla volta, `Cancel()`, stati idle/running/done/failed/canceled, eventi `job:progress`/`job:done` via Wails runtime) — DoD: test con job finto: un secondo avvio durante un job è rifiutato; annulla porta allo stato `canceled`.
+- [~] Task 23: Binding in `app.go`: `ListDisks`, `IsElevated`, `StartClone`, `StartArchive`, `StartRestore`, `Cancel`, `PickSaveFile`, `PickArchive`, `PickFolder`, `GetConfig`/`SetLanguage`; ogni `Start*` ri-valida con `validate`; frontend solo con asset embedded, CSP restrittiva, link esterni via `BrowserOpenURL`, devtools disattivati in build (F10) — DoD: `wails dev` genera i binding TS; chiamata a `ListDisks` dal frontend restituisce i dischi reali.
 
 ## Fase 5 — UI (Svelte)
 
