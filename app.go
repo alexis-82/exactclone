@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"diskclone/internal/disk"
+	"diskclone/internal/image"
 	"diskclone/internal/job"
 	"diskclone/internal/mount"
 	"diskclone/internal/privilege"
@@ -109,10 +112,72 @@ func (a *App) start(kind string, fn job.Func) error {
 // Cancel stops the running operation.
 func (a *App) Cancel() { a.jobs.Cancel() }
 
-// PickSaveFile asks where to save a new archive.
-func (a *App) PickSaveFile(defaultName string) (string, error) {
-	return runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		DefaultFilename: defaultName,
-		Filters:         []runtime.FileFilter{{DisplayName: "Diskclone archive (*.tar.zst)", Pattern: "*.tar.zst"}},
+// StartImage starts a bit-by-bit copy of disk srcID into a new image file.
+func (a *App) StartImage(srcID, outPath string, verify bool) error {
+	if !privilege.IsElevated() {
+		return coded(validate.CodeNotElevated, nil)
+	}
+	src, err := findDisk(srcID)
+	if err != nil {
+		return err
+	}
+	if !strings.HasSuffix(strings.ToLower(outPath), image.Extension) {
+		outPath += image.Extension
+	}
+	destDir := filepath.Dir(outPath)
+	info, err := mount.Stat(destDir)
+	if err != nil {
+		return coded("stat_failed", err)
+	}
+	if err := validate.Image(src, destDir, info); err != nil {
+		return err
+	}
+	if _, err := os.Stat(outPath); err == nil {
+		return coded("file_exists", nil)
+	}
+	return a.start("image", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runImage(ctx, r, src, outPath, verify)
 	})
+}
+
+// ReadImageInfo returns the metadata of an image file.
+func (a *App) ReadImageInfo(path string) (image.Info, error) {
+	info, err := image.ReadInfo(path)
+	if err != nil {
+		return info, imageError(err)
+	}
+	return info, nil
+}
+
+// StartRestoreImage writes the image at imagePath onto disk dstID.
+func (a *App) StartRestoreImage(imagePath, dstID string, verify bool) error {
+	if !privilege.IsElevated() {
+		return coded(validate.CodeNotElevated, nil)
+	}
+	info, err := image.ReadInfo(imagePath)
+	if err != nil {
+		return imageError(err)
+	}
+	dst, err := findDisk(dstID)
+	if err != nil {
+		return err
+	}
+	if err := validate.RestoreImage(imagePath, info.SizeBytes, dst, devSafe()); err != nil {
+		return err
+	}
+	return a.start("restore", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runRestoreImage(ctx, r, imagePath, dst, verify)
+	})
+}
+
+var imageFilter = []runtime.FileFilter{{DisplayName: "Disk Clone image (*.img.zst)", Pattern: "*.img.zst"}}
+
+// PickSaveFile asks where to save a new image.
+func (a *App) PickSaveFile(defaultName string) (string, error) {
+	return runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{DefaultFilename: defaultName, Filters: imageFilter})
+}
+
+// PickImage asks for an existing image.
+func (a *App) PickImage() (string, error) {
+	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{Filters: imageFilter})
 }
