@@ -1,4 +1,4 @@
-module diskclone
+module exactclone
 
 go 1.25.0
 

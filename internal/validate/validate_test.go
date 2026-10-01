@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"diskclone/internal/disk"
-	"diskclone/internal/mount"
+	"exactclone/internal/disk"
+	"exactclone/internal/mount"
 )
 
 func code(err error) string {

@@ -10,12 +10,12 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"diskclone/internal/disk"
-	"diskclone/internal/image"
-	"diskclone/internal/job"
-	"diskclone/internal/mount"
-	"diskclone/internal/privilege"
-	"diskclone/internal/validate"
+	"exactclone/internal/disk"
+	"exactclone/internal/image"
+	"exactclone/internal/job"
+	"exactclone/internal/mount"
+	"exactclone/internal/privilege"
+	"exactclone/internal/validate"
 )
 
 // Errors returned to the frontend have the form "code" or "code|detail";
@@ -42,7 +42,7 @@ func (a *App) startup(ctx context.Context) {
 	a.jobs = job.NewManager(func(name string, data any) { runtime.EventsEmit(ctx, name, data) })
 }
 
-func devSafe() bool { return os.Getenv("DISKCLONE_DEV_SAFE") == "1" }
+func devSafe() bool { return disk.DevSafe() }
 
 // IsElevated reports whether the app runs as administrator/root.
 func (a *App) IsElevated() bool { return privilege.IsElevated() }
@@ -170,7 +170,7 @@ func (a *App) StartRestoreImage(imagePath, dstID string, verify bool) error {
 	})
 }
 
-var imageFilter = []runtime.FileFilter{{DisplayName: "Disk Clone image (*.img.zst)", Pattern: "*.img.zst"}}
+var imageFilter = []runtime.FileFilter{{DisplayName: "ExactClone image (*.img.zst)", Pattern: "*.img.zst"}}
 
 // PickSaveFile asks where to save a new image.
 func (a *App) PickSaveFile(defaultName string) (string, error) {

@@ -6,7 +6,8 @@ import (
 	"path/filepath"
 )
 
-// Config is persisted in <user config dir>/diskclone/config.json.
+// Config is persisted in <user config dir>/exactclone/config.json; settings
+// saved under the old name (diskclone) are read when it does not exist yet.
 type Config struct {
 	Language string `json:"language"` // "it" or "en"
 }
@@ -16,7 +17,7 @@ func configPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "diskclone", "config.json"), nil
+	return filepath.Join(dir, "exactclone", "config.json"), nil
 }
 
 func loadConfig() Config {
@@ -25,7 +26,11 @@ func loadConfig() Config {
 	if err != nil {
 		return cfg
 	}
-	if data, err := os.ReadFile(p); err == nil {
+	data, err := os.ReadFile(p)
+	if os.IsNotExist(err) {
+		data, err = os.ReadFile(filepath.Join(filepath.Dir(filepath.Dir(p)), "diskclone", "config.json"))
+	}
+	if err == nil {
 		json.Unmarshal(data, &cfg)
 	}
 	if cfg.Language != "it" && cfg.Language != "en" {

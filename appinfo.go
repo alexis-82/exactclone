@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"diskclone/internal/privilege"
+	"exactclone/internal/privilege"
 )
 
 // wails.json is the single source of the product name and version (Wails

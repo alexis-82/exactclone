@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"diskclone/internal/disk"
-	"diskclone/internal/job"
-	"diskclone/internal/privilege"
-	"diskclone/internal/rawdev"
+	"exactclone/internal/disk"
+	"exactclone/internal/job"
+	"exactclone/internal/privilege"
+	"exactclone/internal/rawdev"
 )
 
 type events struct {
@@ -329,7 +329,7 @@ func TestCA7CancelRestore(t *testing.T) {
 func TestReadImageInfoRejectsForeignFile(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "x.img.zst")
 	os.WriteFile(p, []byte("not an image"), 0o644)
-	if _, err := (&App{}).ReadImageInfo(p); err == nil || !strings.HasPrefix(err.Error(), "not_diskclone_image") {
+	if _, err := (&App{}).ReadImageInfo(p); err == nil || !strings.HasPrefix(err.Error(), "not_exactclone_image") {
 		t.Fatalf("err = %v", err)
 	}
 }

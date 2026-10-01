@@ -17,9 +17,9 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"diskclone/internal/clone"
-	"diskclone/internal/disk"
-	"diskclone/internal/rawdev"
+	"exactclone/internal/clone"
+	"exactclone/internal/disk"
+	"exactclone/internal/rawdev"
 )
 
 const ioctlDiskGetDiskAttributes = 0x000700F0

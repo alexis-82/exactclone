@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"strings"
 
-	"diskclone/internal/disk"
-	"diskclone/internal/mount"
+	"exactclone/internal/disk"
+	"exactclone/internal/mount"
 )
 
 // Error codes, translated by the frontend (errors.<code>).
@@ -31,7 +31,7 @@ func (e *Error) Error() string { return e.Code }
 func fail(code string) error { return &Error{Code: code} }
 
 // devSafeBuses are the only destinations allowed in dev-safe mode
-// (DISKCLONE_DEV_SAFE=1): USB drives, loop devices and VHDs. The removable
+// (EXACTCLONE_DEV_SAFE=1): USB drives, loop devices and VHDs. The removable
 // flag is not used because Windows reports hot-plug SATA disks as removable.
 var devSafeBuses = map[string]bool{"usb": true, "loop": true, "virtual": true}
 

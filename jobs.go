@@ -9,11 +9,11 @@ import (
 	"os"
 	goruntime "runtime"
 
-	"diskclone/internal/clone"
-	"diskclone/internal/disk"
-	"diskclone/internal/image"
-	"diskclone/internal/job"
-	"diskclone/internal/rawdev"
+	"exactclone/internal/clone"
+	"exactclone/internal/disk"
+	"exactclone/internal/image"
+	"exactclone/internal/job"
+	"exactclone/internal/rawdev"
 )
 
 // Notice codes shown at the end of a job.
@@ -176,7 +176,7 @@ func writeToDisk(ctx context.Context, r *job.Reporter, src io.ReaderAt, dst disk
 func imageError(err error) error {
 	switch {
 	case errors.Is(err, image.ErrNotImage):
-		return coded("not_diskclone_image", err)
+		return coded("not_exactclone_image", err)
 	case errors.Is(err, image.ErrIncomplete):
 		return coded("image_incomplete", err)
 	case errors.Is(err, image.ErrCorrupt):

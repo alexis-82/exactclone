@@ -5,8 +5,8 @@ import (
 	"errors"
 	"sync"
 
-	"diskclone/internal/clone"
-	"diskclone/internal/progress"
+	"exactclone/internal/clone"
+	"exactclone/internal/progress"
 )
 
 // Event names emitted to the frontend.

@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Disk Clone
-Comment=Clone disks and back up partitions
-Comment[it]=Clona dischi e salva le partizioni
-Exec=/usr/local/bin/diskclone-launch.sh
-Icon=diskclone
-Terminal=false
-Categories=System;Utility;

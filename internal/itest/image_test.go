@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"diskclone/internal/clone"
-	"diskclone/internal/disk"
-	"diskclone/internal/image"
-	"diskclone/internal/rawdev"
+	"exactclone/internal/clone"
+	"exactclone/internal/disk"
+	"exactclone/internal/image"
+	"exactclone/internal/rawdev"
 )
 
 // imageRoundTrip copies src into an image file, restores it onto dst and

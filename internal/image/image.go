@@ -24,13 +24,16 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 
-	"diskclone/internal/clone"
+	"exactclone/internal/clone"
 )
 
 // Extension of image files.
 const Extension = ".img.zst"
 
 const (
+	// formatName identifies the format inside the file header. It keeps the
+	// project's original name so that images created before the rename to
+	// ExactClone stay readable: never change it.
 	formatName         = "diskclone-image"
 	formatVersion      = 1
 	headerMagic        = 0x184D2A50 // zstd skippable frame, user nibble 0
@@ -40,8 +43,8 @@ const (
 )
 
 var (
-	// ErrNotImage: the file is not a Disk Clone image.
-	ErrNotImage = errors.New("not a diskclone image")
+	// ErrNotImage: the file is not an ExactClone image.
+	ErrNotImage = errors.New("not an ExactClone image")
 	// ErrIncomplete: the image has no trailer (creation interrupted).
 	ErrIncomplete = errors.New("incomplete image")
 	// ErrCorrupt: the image data is damaged or does not match its checksum.

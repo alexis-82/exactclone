@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"diskclone/internal/clone"
+	"exactclone/internal/clone"
 )
 
 // diskData simulates a disk: some random data followed by empty space.
@@ -192,5 +192,18 @@ func TestCreateDoesNotOverwrite(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(path); string(b) != "keep" {
 		t.Fatal("existing file modified")
+	}
+}
+
+// Images created before the rename to ExactClone carry "diskclone-image":
+// the identifier must never change, or they could not be restored anymore.
+func TestFormatIdentifierUnchanged(t *testing.T) {
+	path := makeImage(t, diskData(t, 1024, 0))
+	head := make([]byte, 200)
+	f, _ := os.Open(path)
+	defer f.Close()
+	f.Read(head)
+	if !bytes.Contains(head, []byte(`"format":"diskclone-image"`)) {
+		t.Fatalf("header = %q", head)
 	}
 }

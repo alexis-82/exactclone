@@ -1,4 +1,4 @@
-# Disk Clone
+# ExactClone
 
 Applicazione desktop (Go + Wails v2 + Svelte) per Windows e Linux:
 
@@ -28,7 +28,7 @@ go test ./...        # test unitari Go
 cd frontend && npm run check && npm run check:i18n
 ```
 
-Modalità sicura per lo sviluppo: con `DISKCLONE_DEV_SAFE=1` come destinazione sono ammessi solo dischi USB, VHD e loop (su Linux compaiono anche i loop device).
+Modalità sicura per lo sviluppo: con `EXACTCLONE_DEV_SAFE=1` come destinazione sono ammessi solo dischi USB, VHD e loop (su Linux compaiono anche i loop device).
 
 ## Build
 
@@ -38,7 +38,7 @@ Modalità sicura per lo sviluppo: con `DISKCLONE_DEV_SAFE=1` come destinazione s
 wails build -platform windows/amd64
 ```
 
-Produce `build/bin/diskclone.exe` (eseguibile unico). Il manifest richiede l'elevazione: all'avvio compare la richiesta UAC.
+Produce `build/bin/exactclone.exe` (eseguibile unico). Il manifest richiede l'elevazione: all'avvio compare la richiesta UAC.
 
 ### Linux
 
@@ -53,25 +53,25 @@ sudo sh build/linux/install.sh
 
 | File | Destinazione |
 |---|---|
-| eseguibile | `/usr/local/bin/diskclone` |
-| launcher | `/usr/local/bin/diskclone-launch.sh` |
-| helper root | `/usr/local/libexec/diskclone-root` |
-| policy polkit | `/usr/share/polkit-1/actions/org.diskclone.policy` |
-| voce di menu | `/usr/share/applications/diskclone.desktop` |
+| eseguibile | `/usr/local/bin/exactclone` |
+| launcher | `/usr/local/bin/exactclone-launch.sh` |
+| helper root | `/usr/local/libexec/exactclone-root` |
+| policy polkit | `/usr/share/polkit-1/actions/org.exactclone.policy` |
+| voce di menu | `/usr/share/applications/exactclone.desktop` |
 
 Dipendenza a runtime: `libwebkit2gtk-4.1-0`.
 
 #### Avvio come root (pkexec)
 
-La voce di menu esegue `diskclone-launch.sh`, che chiama `pkexec` (richiesta password con la finestra di polkit) e passa all'helper root le variabili necessarie ad aprire la finestra (`DISPLAY`, `XAUTHORITY`, `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR`, lingua).
+La voce di menu esegue `exactclone-launch.sh`, che chiama `pkexec` (richiesta password con la finestra di polkit) e passa all'helper root le variabili necessarie ad aprire la finestra (`DISPLAY`, `XAUTHORITY`, `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR`, lingua).
 
-Sessione **Wayland**: molti compositor rifiutano finestre di client root, quindi il launcher usa XWayland (`GDK_BACKEND=x11`) e autorizza root sul display con `xhost +SI:localuser:root`. Per provare Wayland nativo: `DISKCLONE_WAYLAND=1 diskclone-launch.sh`.
+Sessione **Wayland**: molti compositor rifiutano finestre di client root, quindi il launcher usa XWayland (`GDK_BACKEND=x11`) e autorizza root sul display con `xhost +SI:localuser:root`. Per provare Wayland nativo: `EXACTCLONE_WAYLAND=1 exactclone-launch.sh`.
 
 Se la finestra non si apre:
 
-1. avviare `diskclone-launch.sh` da terminale e leggere l'errore;
+1. avviare `exactclone-launch.sh` da terminale e leggere l'errore;
 2. verificare che `xhost` sia installato (pacchetto `x11-xserver-utils` / `xorg-xhost`);
-3. in alternativa avviare direttamente `sudo -E diskclone`.
+3. in alternativa avviare direttamente `sudo -E exactclone`.
 
 ## Test di integrazione (dischi virtuali)
 
@@ -87,15 +87,24 @@ sudo go test -tags integration -count=1 -v ./internal/itest/
 
 ```powershell
 go test -tags integration -count=1 -v ./internal/itest/
-$env:DISKCLONE_EXPECT_ELEVATED = "1"; go test -count=1 ./internal/privilege/
+$env:EXACTCLONE_EXPECT_ELEVATED = "1"; go test -count=1 ./internal/privilege/
 ```
 
-## Immagini `.img.zst` senza Disk Clone
+## Immagini `.img.zst` senza ExactClone
 
-Un'immagine è uno stream zstd standard dell'intero disco; le informazioni di Disk Clone (disco di origine, dimensione, SHA-256) stanno in frame che i decompressori standard ignorano. Decomprimendola si ottiene un `.img` grezzo, identico al disco:
+Un'immagine è uno stream zstd standard dell'intero disco; le informazioni di ExactClone (disco di origine, dimensione, SHA-256) stanno in frame che i decompressori standard ignorano. Decomprimendola si ottiene un `.img` grezzo, identico al disco:
 
 - **Windows**: [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) — il 7-Zip ufficiale e il `tar.exe` di Windows 10 non supportano zstd.
 - **Linux**: `zstd -d disco.img.zst` (pacchetto `zstd`). Ripristino manuale su un disco: `zstd -dc disco.img.zst | sudo dd of=/dev/sdX bs=16M status=progress conv=fsync`.
+
+## Nome precedente
+
+Il progetto si chiamava **Disk Clone** (`diskclone`). Dopo la rinomina:
+
+- le immagini create con Disk Clone restano compatibili (l'identificativo interno del formato non è cambiato);
+- le impostazioni vengono lette dalla vecchia cartella `diskclone` se quella nuova non esiste ancora;
+- la variabile `DISKCLONE_DEV_SAFE` è ancora accettata insieme a `EXACTCLONE_DEV_SAFE`;
+- su Linux `install.sh` rimuove la vecchia installazione.
 
 ## Note di comportamento
 

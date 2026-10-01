@@ -1,8 +1,8 @@
-# Disk Clone — Guida a compilazione e installazione
+# ExactClone — Guida a compilazione e installazione
 
-Questa guida spiega come preparare l'ambiente, compilare e installare Disk Clone su **Windows** e su **Linux**.
+Questa guida spiega come preparare l'ambiente, compilare e installare ExactClone su **Windows** e su **Linux**.
 
-> Disk Clone scrive direttamente sui dischi. Prima di usarlo su dischi con dati importanti, esegui i test di integrazione (sezione 4), che lavorano solo su dischi virtuali.
+> ExactClone scrive direttamente sui dischi. Prima di usarlo su dischi con dati importanti, esegui i test di integrazione (sezione 4), che lavorano solo su dischi virtuali.
 
 ---
 
@@ -26,7 +26,7 @@ Questa guida spiega come preparare l'ambiente, compilare e installare Disk Clone
 | Git | qualsiasi | scaricare il progetto (facoltativo) |
 | WebView2 | — | solo Windows: motore dell'interfaccia (già presente su Windows 10/11) |
 | WebKitGTK 4.1 + GTK 3 | — | solo Linux: motore dell'interfaccia |
-| [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) | facoltativo | solo Windows: decomprimere le immagini `.img.zst` senza Disk Clone |
+| [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) | facoltativo | solo Windows: decomprimere le immagini `.img.zst` senza ExactClone |
 
 Linux va compilato **su Linux** (o in WSL2): Wails su Linux usa CGO e WebKitGTK e non si compila da Windows.
 
@@ -82,7 +82,7 @@ wails build -platform windows/amd64
 
 Al primo avvio Wails esegue `npm install` nel frontend: ci vuole qualche minuto.
 
-Risultato: **`build\bin\diskclone.exe`** (circa 12 MB, eseguibile unico, non richiede installazione).
+Risultato: **`build\bin\exactclone.exe`** (circa 12 MB, eseguibile unico, non richiede installazione).
 
 Varianti utili:
 
@@ -94,17 +94,17 @@ Varianti utili:
 
 ### 2.4 Installare e avviare
 
-Non serve installazione: copia `diskclone.exe` dove preferisci (es. `C:\Program Files\DiskClone\`) e avvialo.
+Non serve installazione: copia `exactclone.exe` dove preferisci (es. `C:\Program Files\ExactClone\`) e avvialo.
 
 - All'avvio Windows mostra la richiesta **UAC**: l'app richiede sempre i privilegi di amministratore per accedere ai dischi.
 - Se su un PC manca WebView2 (raro), installalo da <https://developer.microsoft.com/microsoft-edge/webview2/>.
-- Le impostazioni (lingua) sono salvate in `%APPDATA%\diskclone\config.json`.
+- Le impostazioni (lingua) sono salvate in `%APPDATA%\exactclone\config.json`.
 
-Per disinstallare basta cancellare l'exe e, se vuoi, la cartella `%APPDATA%\diskclone`.
+Per disinstallare basta cancellare l'exe e, se vuoi, la cartella `%APPDATA%\exactclone`.
 
 ### 2.5 Decomprimere un'immagine `.img.zst` a mano (facoltativo)
 
-Il 7-Zip ufficiale e il `tar.exe` di Windows 10 **non** supportano zstd. Per ottenere il `.img` grezzo di un'immagine senza Disk Clone installa **7-Zip-zstd**: <https://github.com/mcmilk/7-Zip-zstd/releases> (si installa in `C:\Program Files\7-Zip-Zstandard\`).
+Il 7-Zip ufficiale e il `tar.exe` di Windows 10 **non** supportano zstd. Per ottenere il `.img` grezzo di un'immagine senza ExactClone installa **7-Zip-zstd**: <https://github.com/mcmilk/7-Zip-zstd/releases> (si installa in `C:\Program Files\7-Zip-Zstandard\`).
 
 ```powershell
 & "C:\Program Files\7-Zip-Zstandard\7z.exe" x disco.img.zst -oC:\estratto
@@ -190,14 +190,14 @@ wails doctor
 ### 3.5 Compilare
 
 ```sh
-git clone <url-del-repository> diskclone
-cd diskclone
+git clone <url-del-repository> exactclone
+cd exactclone
 wails build -tags webkit2_41
 ```
 
 Il tag `-tags webkit2_41` è **obbligatorio** sulle distribuzioni recenti (Ubuntu 24.04, Debian 13, Fedora 40+), che non hanno più WebKitGTK 4.0.
 
-Risultato: **`build/bin/diskclone`**.
+Risultato: **`build/bin/exactclone`**.
 
 ### 3.6 Installare
 
@@ -211,12 +211,12 @@ Lo script copia:
 
 | File | Destinazione |
 |---|---|
-| eseguibile | `/usr/local/bin/diskclone` |
-| launcher | `/usr/local/bin/diskclone-launch.sh` |
-| helper eseguito come root | `/usr/local/libexec/diskclone-root` |
-| policy polkit (richiesta password) | `/usr/share/polkit-1/actions/org.diskclone.policy` |
-| voce nel menu applicazioni | `/usr/share/applications/diskclone.desktop` |
-| icona | `/usr/share/pixmaps/diskclone.png` |
+| eseguibile | `/usr/local/bin/exactclone` |
+| launcher | `/usr/local/bin/exactclone-launch.sh` |
+| helper eseguito come root | `/usr/local/libexec/exactclone-root` |
+| policy polkit (richiesta password) | `/usr/share/polkit-1/actions/org.exactclone.policy` |
+| voce nel menu applicazioni | `/usr/share/applications/exactclone.desktop` |
+| icona | `/usr/share/pixmaps/exactclone.png` |
 
 Su una macchina diversa da quella di compilazione serve solo la libreria a runtime:
 
@@ -226,12 +226,14 @@ Su una macchina diversa da quella di compilazione serve solo la libreria a runti
 | Fedora | `webkit2gtk4.1` |
 | Arch | `webkit2gtk-4.1` |
 
+> **Aggiornamento dal vecchio nome "Disk Clone"**: `install.sh` rimuove automaticamente i file installati con il nome `diskclone` (eseguibile, launcher, helper, policy polkit, voce di menu, icona). Le immagini `.img.zst` create con Disk Clone restano utilizzabili e la lingua scelta viene recuperata dalla vecchia configurazione.
+
 ### 3.7 Avviare
 
-Dal menu applicazioni: **Disk Clone**. Oppure da terminale:
+Dal menu applicazioni: **ExactClone**. Oppure da terminale:
 
 ```sh
-diskclone-launch.sh
+exactclone-launch.sh
 ```
 
 Cosa succede:
@@ -240,19 +242,19 @@ Cosa succede:
 2. l'app parte come **root** (necessario per leggere e scrivere i dischi);
 3. nelle sessioni **Wayland** il launcher usa XWayland (`GDK_BACKEND=x11`) e autorizza root sul display con `xhost +SI:localuser:root`, perché molti compositor rifiutano finestre di applicazioni root.
 
-Per provare Wayland nativo: `DISKCLONE_WAYLAND=1 diskclone-launch.sh`.
+Per provare Wayland nativo: `EXACTCLONE_WAYLAND=1 exactclone-launch.sh`.
 
-Le impostazioni sono salvate in `/root/.config/diskclone/config.json` (l'app gira come root).
+Le impostazioni sono salvate in `/root/.config/exactclone/config.json` (l'app gira come root).
 
 ### 3.8 Disinstallare
 
 ```sh
-sudo rm -f /usr/local/bin/diskclone /usr/local/bin/diskclone-launch.sh \
-    /usr/local/libexec/diskclone-root \
-    /usr/share/polkit-1/actions/org.diskclone.policy \
-    /usr/share/applications/diskclone.desktop \
-    /usr/share/pixmaps/diskclone.png
-sudo rm -rf /root/.config/diskclone
+sudo rm -f /usr/local/bin/exactclone /usr/local/bin/exactclone-launch.sh \
+    /usr/local/libexec/exactclone-root \
+    /usr/share/polkit-1/actions/org.exactclone.policy \
+    /usr/share/applications/exactclone.desktop \
+    /usr/share/pixmaps/exactclone.png
+sudo rm -rf /root/.config/exactclone
 ```
 
 ### 3.9 Sviluppo
@@ -286,7 +288,7 @@ Creano dischi virtuali, li clonano, ne fanno un'immagine, la ripristinano e li c
 
 ```powershell
 go test -tags integration -count=1 -v ./internal/itest/
-$env:DISKCLONE_EXPECT_ELEVATED = "1"; go test -count=1 ./internal/privilege/
+$env:EXACTCLONE_EXPECT_ELEVATED = "1"; go test -count=1 ./internal/privilege/
 ```
 
 Usa `diskpart` per creare due VHDX da 256 MiB. Verifica la clonazione e il ciclo immagine → ripristino di un disco GPT con volumi montati e che la destinazione resti offline.
@@ -306,12 +308,12 @@ Con questa variabile come destinazione sono ammessi solo dischi **USB, VHD e loo
 
 ```powershell
 # Windows (PowerShell amministratore)
-$env:DISKCLONE_DEV_SAFE = "1"; .\build\bin\diskclone.exe
+$env:EXACTCLONE_DEV_SAFE = "1"; .\build\bin\exactclone.exe
 ```
 
 ```sh
 # Linux
-DISKCLONE_DEV_SAFE=1 diskclone-launch.sh
+EXACTCLONE_DEV_SAFE=1 exactclone-launch.sh
 ```
 
 ---
@@ -335,9 +337,9 @@ Manca il build tag: compila con `wails build -tags webkit2_41`.
 
 ### Linux: la finestra non si apre dopo la password
 
-1. Avvia `diskclone-launch.sh` da terminale e leggi l'errore.
+1. Avvia `exactclone-launch.sh` da terminale e leggi l'errore.
 2. `cannot open display` → installa `xhost` (sezione 3.1) e riprova.
-3. In alternativa: `sudo -E /usr/local/bin/diskclone`.
+3. In alternativa: `sudo -E /usr/local/bin/exactclone`.
 
 ### Windows: "L'applicazione non ha i privilegi di amministratore"
 

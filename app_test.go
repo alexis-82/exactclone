@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -50,10 +52,34 @@ func TestCoded(t *testing.T) {
 
 func TestAppInfo(t *testing.T) {
 	info := appInfo()
-	if info.Name != "Disk Clone" || info.Version == "" || info.Author == "" {
+	if info.Name != "ExactClone" || info.Version == "" || info.Author == "" {
 		t.Fatalf("product data not read from wails.json: %+v", info)
 	}
 	if info.OS == "" || info.Arch == "" || info.GoVersion == "" || info.ConfigPath == "" {
 		t.Fatalf("environment data missing: %+v", info)
+	}
+}
+
+// Settings saved before the rename (config dir "diskclone") are still read.
+func TestConfigMigratesFromOldName(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("APPDATA", dir)         // Windows
+	t.Setenv("XDG_CONFIG_HOME", dir) // Linux
+	if loadConfig().Language != "it" {
+		t.Fatal("default language must be it")
+	}
+	os.MkdirAll(filepath.Join(dir, "diskclone"), 0o755)
+	os.WriteFile(filepath.Join(dir, "diskclone", "config.json"), []byte(`{"language":"en"}`), 0o644)
+	if got := loadConfig().Language; got != "en" {
+		t.Fatalf("old setting not migrated: %q", got)
+	}
+	if err := (&App{}).SetLanguage("it"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "exactclone", "config.json")); err != nil {
+		t.Fatal("new settings must be saved under exactclone")
+	}
+	if got := loadConfig().Language; got != "it" {
+		t.Fatalf("new setting must win over the old one: %q", got)
 	}
 }

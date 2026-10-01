@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"diskclone/internal/disk"
+	"exactclone/internal/disk"
 )
 
 // systemPartition returns the partition of the system drive, reached by its

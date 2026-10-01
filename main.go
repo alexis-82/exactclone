@@ -17,7 +17,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "Disk Clone",
+		Title:  "ExactClone",
 		Width:  960,
 		Height: 800,
 		AssetServer: &assetserver.Options{

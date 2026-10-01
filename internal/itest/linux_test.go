@@ -14,9 +14,9 @@ import (
 	"strings"
 	"testing"
 
-	"diskclone/internal/clone"
-	"diskclone/internal/disk"
-	"diskclone/internal/rawdev"
+	"exactclone/internal/clone"
+	"exactclone/internal/disk"
+	"exactclone/internal/rawdev"
 )
 
 const loopSize = 256 << 20
@@ -52,7 +52,7 @@ func loop(t *testing.T, random bool) (dev, backing string) {
 
 func findDisk(t *testing.T, dev string) disk.Disk {
 	t.Helper()
-	t.Setenv("DISKCLONE_DEV_SAFE", "1")
+	t.Setenv("EXACTCLONE_DEV_SAFE", "1")
 	disks, err := disk.List()
 	if err != nil {
 		t.Fatal(err)

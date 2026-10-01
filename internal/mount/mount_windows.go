@@ -3,7 +3,7 @@ package mount
 import (
 	"golang.org/x/sys/windows"
 
-	"diskclone/internal/disk"
+	"exactclone/internal/disk"
 )
 
 // Stat returns used/free space and the file system type of the given path.

@@ -1,5 +1,5 @@
 {
-  "app.title": "Disk Clone",
+  "app.title": "ExactClone",
   "app.language": "Lingua",
   "banner.notElevated": "L'applicazione non ha i privilegi di amministratore/root: elenco dischi limitato e operazioni bloccate. Riavviala come amministratore.",
   "banner.devSafe": "Modalità sviluppo sicura: come destinazione sono ammessi solo dischi USB, VHD e loop.",
@@ -21,7 +21,7 @@
   "info.build": "Build",
   "info.author": "Autore",
   "info.imageFormat": "Formato immagine",
-  "info.imageFormatText": "Le immagini .img.zst sono stream zstd standard dell'intero disco: anche senza Disk Clone si decomprimono in un file .img identico al disco di origine.",
+  "info.imageFormatText": "Le immagini .img.zst sono stream zstd standard dell'intero disco: anche senza ExactClone si decomprimono in un file .img identico al disco di origine.",
   "info.toolWindows": "Windows:",
 
   "backup.type": "Tipo di backup",
@@ -114,7 +114,7 @@
   "errors.image_failed": "Errore durante la creazione dell'immagine.",
   "errors.image_corrupt": "L'immagine è danneggiata: i dati non corrispondono al codice di controllo.",
   "errors.image_incomplete": "L'immagine è incompleta (la creazione è stata interrotta).",
-  "errors.not_diskclone_image": "Il file non è un'immagine creata da Disk Clone.",
+  "errors.not_exactclone_image": "Il file non è un'immagine creata da ExactClone.",
   "errors.image_open_failed": "Impossibile aprire l'immagine.",
   "errors.unknown": "Errore imprevisto."
 }

@@ -1,4 +1,4 @@
-# Specifica — Disk Clone Tool (GUI multipiattaforma)
+# Specifica — ExactClone (GUI multipiattaforma)
 
 > **Revisione 2 (2026-10-01)**: su richiesta dello sviluppatore la funzione *file a file* (archivio `.tar.zst` e ripristino in cartella) è stata **rimossa** e sostituita da **Unità → Immagine** bit a bit (`.img.zst`) e **Ripristino Immagine → Unità**. Le decisioni superate sono marcate nella tabella "Decisioni prese".
 
@@ -93,6 +93,7 @@ Nome e versione (da `wails.json`), descrizione delle funzioni, piattaforma, priv
 | D11 | Metadati in **frame skippable** zstd (intestazione + chiusura a dimensione fissa) | File `.json` separato | Un solo file; verificato che il decoder Go e 7-Zip-zstd 26.02 li ignorano e ricostruiscono l'immagine identica. |
 | D12 | Spazio per l'immagine: **blocco rigido** se spazio libero < dimensione del disco | Solo avviso | Scelta dello sviluppatore: mai un'immagine interrotta per disco pieno. |
 | D13 | Immagine con destinazione **FAT32 bloccata** se il disco supera 4 GiB − 1 | Suddivisione in più file | Coerente con D12 (la dimensione compressa non è nota prima); split fuori scope. |
+| D14 | Prodotto rinominato **ExactClone** (modulo Go `exactclone`, eseguibile `exactclone`, pacchetto Linux `org.exactclone.*`) | Solo nome visibile | Scelta dello sviluppatore. Compatibilità: identificativo del formato immagine invariato (`diskclone-image`), migrazione della configurazione, variabile `DISKCLONE_DEV_SAFE` ancora accettata, `install.sh` rimuove la vecchia installazione. |
 
 ## Ambiguità aperte
 

@@ -84,10 +84,6 @@
   li {
     margin: 4px 0;
   }
-  .commands {
-    list-style: none;
-    padding-left: 12px;
-  }
   button.link {
     border: none;
     background: none;

@@ -1,4 +1,4 @@
-# Task — Disk Clone Tool
+# Task — ExactClone (già Disk Clone Tool)
 
 > Legenda: `[x]` fatto e DoD verificato · `[~]` codice fatto, DoD di integrazione da verificare (Linux: `sudo go test -tags integration -count=1 -v ./internal/itest/`; Windows: sessione amministratore) · `[ ]` da fare
 
@@ -86,3 +86,4 @@
 - [~] Task 49: Test di integrazione immagine (VHD Windows, loop Linux) — DoD: scritti e compilano; esecuzione da parte dell'utente.
 - [x] Task 50: Aggiornare README, guida di installazione e test report — DoD: nessun riferimento al file a file.
 - [x] Task 51: Tab "Info": `GetAppInfo` (nome/versione da `wails.json` incorporato, piattaforma, privilegi, modalità sicura, config, versioni Go/Wails, autore) e componente `InfoTab` IT/EN — DoD: `TestAppInfo`, `npm run check`, `check:i18n` verdi; verifica a schermo.
+- [x] Task 52: Rinomina in ExactClone (modulo Go, eseguibile, finestra, traduzioni, pacchetto Linux, documentazione) con compatibilità verso Disk Clone — DoD: build e test verdi; `TestConfigMigratesFromOldName`, `TestFormatIdentifierUnchanged`; nessun "diskclone" residuo salvo compatibilità.

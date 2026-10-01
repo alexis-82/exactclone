@@ -1,7 +1,6 @@
 package disk
 
 import (
-	"os"
 	"os/exec"
 )
 
@@ -15,5 +14,5 @@ func List() ([]Disk, error) {
 			return nil, err
 		}
 	}
-	return parseLsblk(out, os.Getenv("DISKCLONE_DEV_SAFE") == "1")
+	return parseLsblk(out, DevSafe())
 }

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"diskclone/internal/clone"
+	"exactclone/internal/clone"
 )
 
 type recorder struct {
