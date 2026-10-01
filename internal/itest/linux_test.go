@@ -126,3 +126,24 @@ func TestPrepareForWriteUnmountsAndFinishRescans(t *testing.T) {
 		t.Fatalf("destination after clone = %+v, want the ext4 partition of the source", after.Partitions)
 	}
 }
+
+// Drive -> Image -> Drive between loop devices, with the source automounted.
+func TestImageRoundTripLoop(t *testing.T) {
+	src := partitioned(t, "ext4")
+	mnt := t.TempDir()
+	run(t, "mount", src.Partitions[0].Path, mnt)
+	t.Cleanup(func() { exec.Command("umount", mnt).Run() })
+	src = findDisk(t, src.Path)
+	dstPath, _ := loop(t, false)
+	dst := findDisk(t, dstPath)
+
+	imageRoundTrip(t, src, dst)
+	if err := disk.FinishWrite(dst); err != nil {
+		t.Fatal(err)
+	}
+	run(t, "udevadm", "settle")
+	after := findDisk(t, dst.Path)
+	if len(after.Partitions) != 1 || after.Partitions[0].FSType != "ext4" {
+		t.Fatalf("destination after restore = %+v", after.Partitions)
+	}
+}

@@ -83,6 +83,6 @@
 - [x] Task 46: Regole `validate.Image` (spazio ≥ dimensione disco, FAT32 > 4 GiB, file su partizione dell'origine, disco di sistema come origine) e `validate.RestoreImage` (destinazione ≥ immagine, non di sistema, modalità sicura) — DoD: test unitari per ogni regola.
 - [x] Task 47: Binding e job: `StartImage`, `ReadImageInfo`, `StartRestoreImage`, notice offline/GPT — DoD: test dei job con dispositivi simulati da file.
 - [x] Task 48: UI: modalità Unità → Immagine nel tab Backup, tab Ripristino immagine → unità, traduzioni — DoD: `npm run check`, `check:i18n` verdi; verifica a schermo.
-- [ ] Task 49: Test di integrazione immagine (VHD Windows, loop Linux) — DoD: scritti e compilano; esecuzione da parte dell'utente.
+- [~] Task 49: Test di integrazione immagine (VHD Windows, loop Linux) — DoD: scritti e compilano; esecuzione da parte dell'utente.
 - [ ] Task 50: Aggiornare README, guida di installazione e test report — DoD: nessun riferimento al file a file.
 

@@ -135,3 +135,17 @@ func TestCloneGPTWithMountedVolumes(t *testing.T) {
 		t.Fatal("destination must stay offline after the clone")
 	}
 }
+
+// Drive -> Image -> Drive with mounted volumes on both disks; the destination
+// ends up offline like after a clone.
+func TestImageRoundTripVHD(t *testing.T) {
+	src := vhd(t, sourceLayout)
+	dst := vhd(t, "convert gpt\ncreate partition primary\nformat fs=fat32 quick label=DSTFAT\nassign\n")
+	imageRoundTrip(t, src, dst)
+	if err := disk.FinishWrite(dst); err != nil {
+		t.Fatal(err)
+	}
+	if !isOffline(t, dst) {
+		t.Fatal("destination must stay offline after the restore")
+	}
+}
