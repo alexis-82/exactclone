@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/klauspost/compress/zstd"
@@ -126,6 +127,25 @@ func TestRoundTrip(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dest, ManifestName)); !os.IsNotExist(err) {
 		t.Fatal("manifest must not be extracted as a file")
+	}
+}
+
+// Paths longer than 100 bytes (classic tar header limit) and long single
+// names must survive the round trip.
+func TestLongPaths(t *testing.T) {
+	src := t.TempDir()
+	long := strings.Repeat("cartella_lunga_", 6) + "/" + strings.Repeat("x", 120) + ".txt"
+	writeTree(t, src, map[string]int{long: 33})
+	out := filepath.Join(t.TempDir(), "long.tar.zst")
+	if _, err := CreateFile(context.Background(), []Root{{Name: "p", Path: src}}, Manifest{}, out, nil); err != nil {
+		t.Fatal(err)
+	}
+	dest := t.TempDir()
+	if _, err := Extract(context.Background(), out, dest, nil); err != nil {
+		t.Fatal(err)
+	}
+	if fi, err := os.Stat(filepath.Join(dest, "p", filepath.FromSlash(long))); err != nil || fi.Size() != 33 {
+		t.Fatalf("long path not restored: %v", err)
 	}
 }
 
