@@ -101,9 +101,11 @@ func TestPrepareForWriteUnmountsAndFinishRescans(t *testing.T) {
 		t.Fatal("exclusive open must fail while a partition is mounted")
 	}
 
-	if err := disk.PrepareForWrite(src, dst); err != nil {
+	release, err := disk.PrepareForWrite(src, dst)
+	if err != nil {
 		t.Fatal(err)
 	}
+	defer release()
 	s, err := rawdev.Open(src.Path, false)
 	if err != nil {
 		t.Fatal(err)
