@@ -84,5 +84,5 @@
 - [x] Task 47: Binding e job: `StartImage`, `ReadImageInfo`, `StartRestoreImage`, notice offline/GPT — DoD: test dei job con dispositivi simulati da file.
 - [x] Task 48: UI: modalità Unità → Immagine nel tab Backup, tab Ripristino immagine → unità, traduzioni — DoD: `npm run check`, `check:i18n` verdi; verifica a schermo.
 - [~] Task 49: Test di integrazione immagine (VHD Windows, loop Linux) — DoD: scritti e compilano; esecuzione da parte dell'utente.
-- [ ] Task 50: Aggiornare README, guida di installazione e test report — DoD: nessun riferimento al file a file.
+- [x] Task 50: Aggiornare README, guida di installazione e test report — DoD: nessun riferimento al file a file.
 

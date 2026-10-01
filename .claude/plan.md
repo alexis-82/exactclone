@@ -1,5 +1,12 @@
 # Piano tecnico — Disk Clone Tool
 
+> **Revisione 2 (2026-10-01)** — il *file a file* è stato rimosso e sostituito da **Unità → Immagine** e **Ripristino Immagine → Unità** (vedi `spec.md`, decisioni D3, D4, D11–D13, e `tasks.md` Fase 9). Le parti di questo piano su `internal/archive`, `internal/mount.ReadOnly`, stima dello spazio delle partizioni e ripristino in cartella sono **superate**. Al loro posto:
+>
+> - `internal/image`: formato `.img.zst` (stream zstd + metadati JSON in frame skippable: intestazione e chiusura con SHA-256); creazione e ripristino riusano `clone.Copy` con adattatori sequenziali; `Reader.Check` valida i checksum zstd e lo SHA-256 dopo la scrittura.
+> - `disk.PrepareForRead` (solo origine) per la creazione dell'immagine; `disk.PrepareForWrite(disk.Disk{}, dst)` per il ripristino.
+> - `validate.Image` / `validate.RestoreImage`; `jobs.go`: `runImage`, `runRestoreImage` e `writeToDisk` condiviso con la clonazione.
+> - `internal/mount` resta solo per `Stat` (spazio libero e file system della cartella di destinazione).
+
 ## Approccio
 
 Progetto nuovo (cartella vuota, Go e Wails non ancora installati). Applicazione **Wails v2** (stabile) con backend Go e frontend **Svelte + TypeScript** (template ufficiale `svelte-ts`, il più leggero e semplice tra quelli disponibili).

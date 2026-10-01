@@ -26,7 +26,7 @@ Questa guida spiega come preparare l'ambiente, compilare e installare Disk Clone
 | Git | qualsiasi | scaricare il progetto (facoltativo) |
 | WebView2 | — | solo Windows: motore dell'interfaccia (già presente su Windows 10/11) |
 | WebKitGTK 4.1 + GTK 3 | — | solo Linux: motore dell'interfaccia |
-| [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) | facoltativo | solo Windows: aprire gli archivi `.tar.zst` senza Disk Clone |
+| [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) | facoltativo | solo Windows: decomprimere le immagini `.img.zst` senza Disk Clone |
 
 Linux va compilato **su Linux** (o in WSL2): Wails su Linux usa CGO e WebKitGTK e non si compila da Windows.
 
@@ -102,16 +102,15 @@ Non serve installazione: copia `diskclone.exe` dove preferisci (es. `C:\Program 
 
 Per disinstallare basta cancellare l'exe e, se vuoi, la cartella `%APPDATA%\diskclone`.
 
-### 2.5 Aprire gli archivi `.tar.zst` a mano (facoltativo)
+### 2.5 Decomprimere un'immagine `.img.zst` a mano (facoltativo)
 
-Il 7-Zip ufficiale e il `tar.exe` di Windows 10 **non** supportano zstd. Per aprire un backup senza Disk Clone installa **7-Zip-zstd**: <https://github.com/mcmilk/7-Zip-zstd/releases> (si installa in `C:\Program Files\7-Zip-Zstandard\`).
-
-L'archivio si apre in due passaggi: doppio clic su `.tar.zst` → compare il `.tar` → doppio clic sul `.tar` → file. Da riga di comando:
+Il 7-Zip ufficiale e il `tar.exe` di Windows 10 **non** supportano zstd. Per ottenere il `.img` grezzo di un'immagine senza Disk Clone installa **7-Zip-zstd**: <https://github.com/mcmilk/7-Zip-zstd/releases> (si installa in `C:\Program Files\7-Zip-Zstandard\`).
 
 ```powershell
-& "C:\Program Files\7-Zip-Zstandard\7z.exe" x backup.tar.zst -oC:\estratto
-& "C:\Program Files\7-Zip-Zstandard\7z.exe" x C:\estratto\backup.tar -oC:\estratto
+& "C:\Program Files\7-Zip-Zstandard\7z.exe" x disco.img.zst -oC:\estratto
 ```
+
+Il file `disco.img` ottenuto è identico byte per byte al disco di origine (serve spazio pari all'intero disco).
 
 7-Zip-zstd serve anche al test `TestCA4StandardTools` (sezione 4.1), che altrimenti viene saltato.
 
@@ -281,7 +280,7 @@ npm run check:i18n   # traduzioni IT/EN complete
 
 ### 4.2 Test di integrazione (dischi virtuali)
 
-Creano dischi virtuali, li clonano, li archiviano e li cancellano. **Non toccano i dischi reali.**
+Creano dischi virtuali, li clonano, ne fanno un'immagine, la ripristinano e li cancellano. **Non toccano i dischi reali.**
 
 **Windows** — PowerShell **come amministratore**:
 
@@ -290,7 +289,7 @@ go test -tags integration -count=1 -v ./internal/itest/
 $env:DISKCLONE_EXPECT_ELEVATED = "1"; go test -count=1 ./internal/privilege/
 ```
 
-Usa `diskpart` per creare due VHDX da 256 MiB. Verifica la clonazione di un disco GPT con volumi montati, che la destinazione resti offline e la lettura di una partizione senza lettera.
+Usa `diskpart` per creare due VHDX da 256 MiB. Verifica la clonazione e il ciclo immagine → ripristino di un disco GPT con volumi montati e che la destinazione resti offline.
 
 **Linux** — come root (servono `losetup`, `sfdisk`, `mkfs.ext4`, `mkfs.vfat`):
 
@@ -299,7 +298,7 @@ sudo apt install -y util-linux fdisk e2fsprogs dosfstools   # Debian/Ubuntu
 sudo env "PATH=$PATH" go test -tags integration -count=1 -v ./internal/itest/
 ```
 
-Usa i loop device. Verifica clonazione e verifica SHA-256 (compresa una corruzione rilevata), smontaggio automatico, rilettura della tabella partizioni e montaggio in sola lettura di ext4 e FAT.
+Usa i loop device. Verifica clonazione e verifica SHA-256 (compresa una corruzione rilevata), smontaggio automatico, rilettura della tabella partizioni e il ciclo immagine → ripristino.
 
 ### 4.3 Modalità sicura per le prove manuali
 

@@ -1,5 +1,7 @@
 # Test report — Disk Clone
 
+> **Attenzione**: questo report si riferisce alla revisione 1 (con il *file a file*). Va rigenerato con `/test` per la revisione 2 (Unità → Immagine, ripristino immagine).
+
 Ultimo aggiornamento: 2026-10-01, dopo le correzioni della review (R1–R8).
 Macchina: Windows 10 Pro 22H2, i7-6700K, nessun Linux/WSL disponibile, 7-Zip-zstd 26.02 installato. Test di integrazione Windows eseguiti dall'utente in PowerShell **amministratore**.
 

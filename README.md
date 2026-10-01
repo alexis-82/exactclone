@@ -2,9 +2,11 @@
 
 Applicazione desktop (Go + Wails v2 + Svelte) per Windows e Linux:
 
-- **Unità → Unità**: clonazione bit a bit di un disco su un altro, con verifica SHA-256 opzionale.
-- **Unità → File**: archivio compresso `.tar.zst` dei file delle partizioni selezionate.
-- **Ripristino**: estrazione di un archivio in una cartella di un volume già montato.
+- **Unità → Unità**: clonazione bit a bit di un disco su un altro.
+- **Unità → Immagine**: copia bit a bit dell'intero disco in un file immagine compresso `.img.zst`.
+- **Ripristino**: scrittura di un'immagine `.img.zst` su un'unità.
+
+Tutte le operazioni hanno la verifica SHA-256 opzionale (attiva di default).
 
 Richiede privilegi di amministratore (Windows) o root (Linux).
 
@@ -88,15 +90,16 @@ go test -tags integration -count=1 -v ./internal/itest/
 $env:DISKCLONE_EXPECT_ELEVATED = "1"; go test -count=1 ./internal/privilege/
 ```
 
-## Aprire gli archivi senza Disk Clone
+## Immagini `.img.zst` senza Disk Clone
 
-Gli archivi `.tar.zst` sono tar standard compressi con zstd e si possono aprire anche con altri programmi:
+Un'immagine è uno stream zstd standard dell'intero disco; le informazioni di Disk Clone (disco di origine, dimensione, SHA-256) stanno in frame che i decompressori standard ignorano. Decomprimendola si ottiene un `.img` grezzo, identico al disco:
 
-- **Windows**: [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) — il 7-Zip ufficiale e il `tar.exe` di Windows 10 non supportano zstd. Si apre in due passaggi: `.tar.zst` → `.tar` → file.
-- **Linux**: `tar --zstd -xf archivio.tar.zst` (serve il pacchetto `zstd`).
+- **Windows**: [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) — il 7-Zip ufficiale e il `tar.exe` di Windows 10 non supportano zstd.
+- **Linux**: `zstd -d disco.img.zst` (pacchetto `zstd`). Ripristino manuale su un disco: `zstd -dc disco.img.zst | sudo dd of=/dev/sdX bs=16M status=progress conv=fsync`.
 
 ## Note di comportamento
 
-- Windows: durante la clonazione i volumi di origine e destinazione vengono bloccati e smontati e la destinazione viene messa **offline**. Al termine il clone resta offline: va scollegato senza portarlo online sullo stesso PC, altrimenti Windows ne cambia la firma e il clone non si avvia.
+- Windows: durante la copia i volumi dei dischi coinvolti vengono bloccati e smontati e il disco che viene scritto (clonazione, ripristino) viene messo **offline**. Al termine resta offline: va scollegato senza portarlo online sullo stesso PC, altrimenti Windows ne cambia la firma e il clone non si avvia.
 - Linux: le partizioni montate automaticamente da origine e destinazione vengono smontate dopo la conferma; a fine copia il kernel rilegge la tabella delle partizioni.
-- Archivi: symlink e junction vengono salvati come link e non seguiti; FIFO, socket e device vengono saltati con un avviso. Nel ripristino i link che puntano fuori dalla cartella di destinazione non vengono creati.
+- Immagini: lo spazio libero della destinazione deve essere almeno pari alla dimensione del disco (la dimensione compressa non è nota in anticipo); su FAT32 sono ammessi solo dischi fino a 4 GiB. L'immagine non può essere salvata sul disco di origine né ripristinata su un disco che la contiene. Un'immagine interrotta viene cancellata; una danneggiata viene rifiutata durante il ripristino.
+- Il disco di sistema in uso non può essere né origine né destinazione.
