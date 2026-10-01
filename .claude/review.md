@@ -108,3 +108,68 @@ Ci sono blocker e major → tornare a `/implement` per R1–R4 (R5–R8 si posso
 | R6 | corretto | Fase "scan" preliminare: il totale dell'avanzamento è la somma delle dimensioni dei file. Test: `TestCA3ArchiveAndRestore` (100% esatto con stima volutamente errata). |
 | R7 | corretto | Cache dello spazio usato per partizione (chiave con seriale e dimensione), svuotata da `ListDisks`. Test: `TestEstimateCachesUsage`. |
 | R8 | corretto | Ripristino senza requisito di privilegi anche nel frontend. |
+
+
+---
+
+# Review — secondo giro (correzioni R1–R8)
+
+Ambito: diff `1dae2c4..6165a0f` (correzioni della review), esclusi i file in `.claude/`. File: `internal/archive/{archive,extract}.go`, `internal/disk/enum_windows.go`, `app.go`, `jobs.go`, `frontend/src/lib/{RestoreTab,ProgressPanel}.svelte`, `frontend/src/App.svelte`, traduzioni.
+Metodo: lettura del diff + un probe temporaneo (eseguito e rimosso) per S1.
+
+Riepilogo: **0 blocker, 1 major, 3 minor.**
+
+| # | Severità | Asse | Titolo |
+|---|---|---|---|
+| S1 | major | Sicurezza | Un'entry hard link verso un symlink crea un link che punta fuori dalla destinazione |
+| S2 | minor | Correttezza | `ContentBytes` conta anche i file che `Create` poi salta |
+| S3 | minor | Correttezza | `StartArchive` usa lo spazio usato in cache, non più misurato al momento dell'avvio |
+| S4 | minor | Prestazioni | `noLinkInParents` esegue un `Lstat` per ogni livello di ogni entry |
+
+## Major
+
+### S1 — Un'entry hard link verso un symlink crea un link che punta fuori dalla destinazione
+- **Locazione**: `internal/archive/extract.go:117-126` (`case tar.TypeLink` → `os.Link(src, target)`).
+- **Problema**: se la sorgente dell'hard link è un symlink, `os.Link` (su Linux `linkat` senza `AT_SYMLINK_FOLLOW`, su Windows `CreateHardLink`) crea un **secondo symlink con lo stesso target relativo** in un'altra cartella. Il target viene così valutato da una posizione diversa e il controllo `checkLinkTarget` (R1), fatto solo per la posizione originale, non vale più.
+- **Scenario** (verificato con un probe su Windows):
+  1. `a/b/` cartella; `a/b/l` → symlink a `../x` (risolve in `a/x`, interno ✔)
+  2. `l2` → hard link a `a/b/l`
+  3. risultato: `dest/l2` è un symlink a `..\x` che risolve in **`<genitore di dest>\x`**.
+  La scrittura *attraverso* `l2` resta bloccata da `noLinkInParents`, ma il ripristino lascia nella cartella un link verso un percorso arbitrario esterno (es. `../../../../etc` o `..\..\Windows\System32`): chiunque in seguito copi file "dentro" quella cartella scrive fuori. Viola l'invariante introdotta con R1 ("mai creare link che puntano fuori").
+- **Suggerimento**: se la sorgente dell'hard link è un link (`isLink(src)`), trattare l'entry come symlink: leggere il target con `os.Readlink` e validarlo con `checkLinkTarget` rispetto alla **nuova** posizione (saltandola con avviso se esce); aggiungere il probe come test di regressione.
+
+## Minor
+
+### S2 — `ContentBytes` conta anche i file che `Create` poi salta
+- **Locazione**: `internal/archive/archive.go:262` (`Scan` somma `fi.Size()` prima dell'apertura) vs `:265` (`Create` salta con avviso i file che non si aprono).
+- **Problema**: i file bloccati da altri processi (database aperti, dischi di VM in uso, `pagefile.sys` su un disco dati) vengono contati dalla scansione ma non archiviati. Effetti: l'avanzamento si ferma sotto il 100% prima di "completato"; `ContentBytes` nel manifest sovrastima lo spazio di ripristino, e un ripristino che ci starebbe può essere rifiutato con `insufficient_space`.
+- **Suggerimento**: scrivere a fine archivio il totale effettivamente archiviato (es. un'entry finale o un secondo manifest) e usarlo nel ripristino; in alternativa far chiamare `onProgress` anche per i byte dei file saltati, così il totale torna.
+
+### S3 — `StartArchive` usa lo spazio usato in cache
+- **Locazione**: `app.go:220` (`a.estimate` → cache di `usedSpace`, `app.go:150`).
+- **Problema**: prima di R7 `StartArchive` rimisurava le partizioni; ora usa il valore memorizzato alla prima stima. Se tra la selezione e "Avvia" l'utente aggiunge dati alla partizione di origine, il controllo dello spazio libero usa un valore vecchio e l'archiviazione può fallire più avanti per disco pieno (l'archivio parziale viene comunque cancellato).
+- **Suggerimento**: in `StartArchive` misurare senza cache (un solo montaggio in più, all'avvio), lasciando la cache alle stime interattive dell'interfaccia.
+
+### S4 — `noLinkInParents` esegue un `Lstat` per ogni livello di ogni entry
+- **Locazione**: `internal/archive/extract.go:177-186`.
+- **Problema**: costo O(entry × profondità) chiamate di sistema; con centinaia di migliaia di file in alberi profondi su NTFS il ripristino rallenta (non misurato).
+- **Suggerimento**: memorizzare le cartelle già verificate o create dall'estrazione stessa (una mappa) e controllare con `Lstat` solo quelle nuove.
+
+## Assi senza ulteriori finding
+
+- **Correttezza R2/R5**: `cloneNotices` legge correttamente l'errore restituito tramite il risultato nominato anche nei `return` con variabili locali; `bootDiskNumbers` risolve la partizione EFI (verificato dai test).
+- **Edge case R3**: lettura corta, errore di lettura, annullamento durante il riempimento con zeri (restituisce `ErrCanceled`) ed errore di scrittura (propagato senza riempimento) sono distinti correttamente.
+- **Concorrenza R7**: la cache è protetta da mutex; due misure concorrenti della stessa partizione producono solo una misura in più, nessuna incoerenza.
+- **Frontend**: fase `scan` con barra indeterminata, `needed` con fallback, ripristino senza privilegi: coerenti col backend; `check` e `check:i18n` verdi.
+
+## Sospetti non confermati
+
+- *Cartelle "reparse point" non-link (es. OneDrive Files On-Demand) trattate come link da `isLink`, con ripristino rifiutato*: non verificabile qui (la cartella OneDrive di questa macchina è vuota; Go riporta la radice come cartella normale). Da tenere d'occhio nel collaudo.
+
+## Fuori scope — segnalazioni
+
+Nessuna.
+
+## Prossimo passo
+
+C'è un **major (S1)** → `/implement` per S1 (e, se si vuole, S2–S4), poi `/test`.
