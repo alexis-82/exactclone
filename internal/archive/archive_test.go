@@ -191,6 +191,72 @@ func TestCreateFileCancelRemovesPartial(t *testing.T) {
 	}
 }
 
+type flakyFile struct {
+	data []byte
+	fail error // returned after data instead of io.EOF
+}
+
+func (f *flakyFile) Read(p []byte) (int, error) {
+	if len(f.data) == 0 {
+		if f.fail != nil {
+			return 0, f.fail
+		}
+		return 0, io.EOF
+	}
+	n := copy(p, f.data)
+	f.data = f.data[n:]
+	return n, nil
+}
+func (f *flakyFile) Close() error { return nil }
+
+// Review R3: a file that shrinks or fails while being read must not abort
+// the backup: its entry is completed with zeros and a warning is reported.
+func TestCreateSurvivesShrinkingAndUnreadableFiles(t *testing.T) {
+	for name, fail := range map[string]error{"shrink": nil, "ioerror": errors.New("bad sector")} {
+		t.Run(name, func(t *testing.T) {
+			src := t.TempDir()
+			writeTree(t, src, map[string]int{"a_before.txt": 100, "b_victim.bin": 10000, "c_after.txt": 200})
+			orig := openFile
+			defer func() { openFile = orig }()
+			openFile = func(p string) (io.ReadCloser, error) {
+				if filepath.Base(p) == "b_victim.bin" {
+					data, _ := os.ReadFile(p)
+					return &flakyFile{data: data[:4000], fail: fail}, nil
+				}
+				return orig(p)
+			}
+			out := filepath.Join(t.TempDir(), "a.tar.zst")
+			var progress int64
+			warns, err := CreateFile(context.Background(), []Root{{Name: "p", Path: src}}, Manifest{}, out, func(n int64) { progress += n })
+			if err != nil {
+				t.Fatalf("backup aborted: %v", err)
+			}
+			if len(warns) != 1 || filepath.Base(warns[0].Path) != "b_victim.bin" {
+				t.Fatalf("warnings = %v", warns)
+			}
+			if progress != 10300 {
+				t.Fatalf("progress = %d, want 10300 (padding counted)", progress)
+			}
+			dest := t.TempDir()
+			if _, err := Extract(context.Background(), out, dest, nil); err != nil {
+				t.Fatal(err)
+			}
+			victim, _ := os.ReadFile(filepath.Join(dest, "p", "b_victim.bin"))
+			orig4000, _ := os.ReadFile(filepath.Join(src, "b_victim.bin"))
+			if len(victim) != 10000 || !bytes.Equal(victim[:4000], orig4000[:4000]) || !bytes.Equal(victim[4000:], make([]byte, 6000)) {
+				t.Fatal("victim file not completed with zeros")
+			}
+			for _, f := range []string{"a_before.txt", "c_after.txt"} {
+				want, _ := os.ReadFile(filepath.Join(src, f))
+				got, _ := os.ReadFile(filepath.Join(dest, "p", f))
+				if !bytes.Equal(want, got) {
+					t.Fatalf("%s damaged", f)
+				}
+			}
+		})
+	}
+}
+
 func TestCreateFileDoesNotOverwrite(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "exists.tar.zst")
 	os.WriteFile(out, []byte("keep"), 0o644)

@@ -229,7 +229,7 @@ func (c *creator) addFile(p, name string, fi fs.FileInfo) error {
 		}
 		c.links[key] = name
 	}
-	f, err := os.Open(p)
+	f, err := openFile(p)
 	if err != nil {
 		c.warn(p, err.Error())
 		return nil
@@ -239,14 +239,40 @@ func (c *creator) addFile(p, name string, fi fs.FileInfo) error {
 		return err
 	}
 	n, err := copyCtx(c.ctx, c.tw, io.LimitReader(f, fi.Size()), c.buf, c.onProgress)
-	if err != nil {
+	var rerr *readError
+	switch {
+	case errors.As(err, &rerr):
+		c.warn(p, fmt.Sprintf("read error after %d bytes, rest filled with zeros: %v", n, rerr.err))
+	case err != nil:
 		return err
+	case n < fi.Size():
+		c.warn(p, fmt.Sprintf("file shrank while reading (%d of %d bytes), rest filled with zeros", n, fi.Size()))
 	}
-	if n < fi.Size() {
-		return fmt.Errorf("%s: file shrank while reading (%d of %d bytes)", p, n, fi.Size())
+	// The tar header already declares fi.Size() bytes: complete the entry so
+	// one unreadable or changing file does not abort the whole backup.
+	if missing := fi.Size() - n; missing > 0 {
+		if _, err := copyCtx(c.ctx, c.tw, io.LimitReader(zeroReader{}, missing), c.buf, c.onProgress); err != nil {
+			return err
+		}
 	}
 	return nil
 }
+
+// openFile is replaced in tests to simulate files that change while read.
+var openFile = func(p string) (io.ReadCloser, error) { return os.Open(p) }
+
+type zeroReader struct{}
+
+func (zeroReader) Read(p []byte) (int, error) {
+	clear(p)
+	return len(p), nil
+}
+
+// readError marks a failure of the source, as opposed to the archive writer.
+type readError struct{ err error }
+
+func (e *readError) Error() string { return e.err.Error() }
+func (e *readError) Unwrap() error { return e.err }
 
 // copyCtx copies src to dst checking ctx between chunks.
 func copyCtx(ctx context.Context, dst io.Writer, src io.Reader, buf []byte, onProgress func(int64)) (int64, error) {
@@ -269,7 +295,7 @@ func copyCtx(ctx context.Context, dst io.Writer, src io.Reader, buf []byte, onPr
 			return total, nil
 		}
 		if rerr != nil {
-			return total, rerr
+			return total, &readError{rerr}
 		}
 	}
 }
