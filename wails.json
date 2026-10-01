@@ -7,7 +7,7 @@
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {
-    "name": "alexis-82",
+    "name": "Alessio Abrugiati",
     "email": "alessioabrugiati@gmail.com"
   },
   "info": {

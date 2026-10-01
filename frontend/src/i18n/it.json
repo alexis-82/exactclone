@@ -23,7 +23,6 @@
   "info.imageFormat": "Formato immagine",
   "info.imageFormatText": "Le immagini .img.zst sono stream zstd standard dell'intero disco: anche senza Disk Clone si decomprimono in un file .img identico al disco di origine.",
   "info.toolWindows": "Windows:",
-  "info.toolLinux": "Linux — installa il pacchetto zstd (se non è già presente):",
 
   "backup.type": "Tipo di backup",
   "backup.typeDisk": "Unità → Unità",
