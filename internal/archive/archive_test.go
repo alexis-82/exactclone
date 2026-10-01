@@ -279,6 +279,91 @@ func TestExtractSkipsEscapingSymlinks(t *testing.T) {
 	}
 }
 
+func canSymlink(t *testing.T) {
+	t.Helper()
+	d := t.TempDir()
+	if err := os.Symlink("x", filepath.Join(d, "l")); err != nil {
+		t.Skip("cannot create symlinks here:", err)
+	}
+}
+
+// Review R1: y -> "." and x -> "y/.." are lexically inside dest, but on
+// Linux x resolves to the parent of dest. Nothing may be written there.
+func TestExtractSymlinkChainDoesNotEscape(t *testing.T) {
+	canSymlink(t)
+	parent := t.TempDir()
+	dest := filepath.Join(parent, "dest")
+	os.Mkdir(dest, 0o755)
+	ar := craft(t,
+		&tar.Header{Name: "y", Typeflag: tar.TypeSymlink, Linkname: "."},
+		&tar.Header{Name: "x", Typeflag: tar.TypeSymlink, Linkname: "y/.."},
+		&tar.Header{Name: "x/evil.txt", Typeflag: tar.TypeReg, Mode: 0o644},
+	)
+	warns, _ := Extract(context.Background(), ar, dest, nil)
+	if _, err := os.Stat(filepath.Join(parent, "evil.txt")); err == nil {
+		t.Fatal("file written outside the destination")
+	}
+	if _, err := os.Lstat(filepath.Join(dest, "x")); err == nil && isLink(filepath.Join(dest, "x")) {
+		t.Fatal("link through another link was created")
+	}
+	if len(warns) == 0 {
+		t.Fatal("the rejected link must be reported")
+	}
+}
+
+func TestExtractRejectsWritingThroughSymlink(t *testing.T) {
+	canSymlink(t)
+	dest := t.TempDir()
+	ar := craft(t,
+		&tar.Header{Name: "p/sub/", Typeflag: tar.TypeDir, Mode: 0o755},
+		&tar.Header{Name: "p/link", Typeflag: tar.TypeSymlink, Linkname: "sub"},
+		&tar.Header{Name: "p/link/f.txt", Typeflag: tar.TypeReg, Mode: 0o644},
+	)
+	if _, err := Extract(context.Background(), ar, dest, nil); !errors.Is(err, ErrUnsafePath) {
+		t.Fatalf("err = %v, want ErrUnsafePath", err)
+	}
+}
+
+func TestExtractKeepsLegitimateRelativeLinks(t *testing.T) {
+	canSymlink(t)
+	dest := t.TempDir()
+	ar := craft(t,
+		&tar.Header{Name: "p/lib/", Typeflag: tar.TypeDir, Mode: 0o755},
+		&tar.Header{Name: "p/lib/libfoo.so.1", Typeflag: tar.TypeReg, Mode: 0o644},
+		&tar.Header{Name: "p/bin/", Typeflag: tar.TypeDir, Mode: 0o755},
+		&tar.Header{Name: "p/bin/foo", Typeflag: tar.TypeSymlink, Linkname: "../lib/libfoo.so.1"},
+	)
+	warns, err := Extract(context.Background(), ar, dest, nil)
+	if err != nil || len(warns) != 0 {
+		t.Fatalf("err = %v, warnings = %v", err, warns)
+	}
+	if data, err := os.ReadFile(filepath.Join(dest, "p", "bin", "foo")); err != nil || string(data) != "x" {
+		t.Fatalf("relative link not usable: %q %v", data, err)
+	}
+}
+
+func TestExtractReplacesExistingSymlinkInsteadOfFollowing(t *testing.T) {
+	canSymlink(t)
+	parent := t.TempDir()
+	dest := filepath.Join(parent, "dest")
+	os.MkdirAll(filepath.Join(dest, "p"), 0o755)
+	outside := filepath.Join(parent, "outside.txt")
+	os.WriteFile(outside, []byte("keep"), 0o644)
+	if err := os.Symlink(outside, filepath.Join(dest, "p", "f.txt")); err != nil {
+		t.Skip(err)
+	}
+	ar := craft(t, &tar.Header{Name: "p/f.txt", Typeflag: tar.TypeReg, Mode: 0o644})
+	if _, err := Extract(context.Background(), ar, dest, nil); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(outside); string(data) != "keep" {
+		t.Fatal("file outside the destination was overwritten through a symlink")
+	}
+	if isLink(filepath.Join(dest, "p", "f.txt")) {
+		t.Fatal("symlink not replaced by the regular file")
+	}
+}
+
 func TestExtractRejectsForeignArchive(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "foreign.tar.zst")
 	f, _ := os.Create(p)

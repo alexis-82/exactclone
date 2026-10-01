@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -78,6 +79,11 @@ func Extract(ctx context.Context, archivePath, destDir string, onProgress func(i
 		if err != nil {
 			return warnings, err
 		}
+		// Never write through a link: on Linux ".." is resolved after
+		// following a symlink, so a lexically safe path can still escape.
+		if err := noLinkInParents(dest, target); err != nil {
+			return warnings, err
+		}
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0o755); err != nil {
@@ -87,6 +93,9 @@ func Extract(ctx context.Context, archivePath, destDir string, onProgress func(i
 		case tar.TypeReg:
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return warnings, err
+			}
+			if isLink(target) {
+				os.Remove(target) // replace the link, do not write through it
 			}
 			if err := writeFile(ctx, target, tr, hdr, buf); err != nil {
 				return warnings, err
@@ -108,6 +117,9 @@ func Extract(ctx context.Context, archivePath, destDir string, onProgress func(i
 		case tar.TypeLink:
 			src, err := safeJoin(dest, hdr.Linkname)
 			if err != nil {
+				return warnings, err
+			}
+			if err := noLinkInParents(dest, src); err != nil {
 				return warnings, err
 			}
 			os.MkdirAll(filepath.Dir(target), 0o755)
@@ -151,15 +163,58 @@ func isRooted(s string) bool {
 	return len(s) >= 2 && s[1] == ':' && ((s[0] >= 'a' && s[0] <= 'z') || (s[0] >= 'A' && s[0] <= 'Z'))
 }
 
-// checkLinkTarget rejects symlinks that are absolute or resolve outside dest.
+// isLink reports symlinks and Windows junctions (reported as irregular files).
+func isLink(p string) bool {
+	fi, err := os.Lstat(p)
+	return err == nil && fi.Mode()&(fs.ModeSymlink|fs.ModeIrregular) != 0
+}
+
+func splitPath(p string) []string {
+	return strings.FieldsFunc(p, func(r rune) bool { return r == '/' || r == '\\' })
+}
+
+// noLinkInParents rejects target when a folder between dest and target is a link.
+func noLinkInParents(dest, target string) error {
+	rel, err := filepath.Rel(dest, target)
+	if err != nil {
+		return fmt.Errorf("%w: %q", ErrUnsafePath, target)
+	}
+	parts := splitPath(rel)
+	cur := dest
+	for _, part := range parts[:max(len(parts)-1, 0)] {
+		cur = filepath.Join(cur, part)
+		if isLink(cur) {
+			return fmt.Errorf("%w: %q is inside the link %q", ErrUnsafePath, target, cur)
+		}
+	}
+	return nil
+}
+
+// checkLinkTarget rejects symlinks that are absolute, leave dest at any step
+// or go through another link before the last component (whose ".." the
+// kernel would resolve physically, not lexically).
 func checkLinkTarget(dest, linkPath, linkname string) error {
 	ln := filepath.FromSlash(linkname)
 	if filepath.IsAbs(ln) || filepath.VolumeName(ln) != "" || isRooted(linkname) {
 		return fmt.Errorf("%w: symlink %q -> %q", ErrUnsafePath, linkPath, linkname)
 	}
-	resolved := filepath.Join(filepath.Dir(linkPath), ln)
-	if !insideDir(dest, resolved) {
-		return fmt.Errorf("%w: symlink %q -> %q", ErrUnsafePath, linkPath, linkname)
+	parts := splitPath(ln)
+	cur := filepath.Dir(linkPath)
+	for i, part := range parts {
+		switch part {
+		case ".":
+			continue
+		case "..":
+			cur = filepath.Dir(cur)
+		default:
+			cur = filepath.Join(cur, part)
+			if i < len(parts)-1 && isLink(cur) {
+				return fmt.Errorf("%w: symlink %q -> %q goes through the link %q", ErrUnsafePath, linkPath, linkname, cur)
+			}
+		}
+		if !insideDir(dest, cur) {
+			return fmt.Errorf("%w: symlink %q -> %q", ErrUnsafePath, linkPath, linkname)
+		}
 	}
 	return nil
 }
