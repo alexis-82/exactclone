@@ -6,8 +6,6 @@
   import { jobStarted } from './job'
   import ConfirmDialog from './ConfirmDialog.svelte'
 
-  let { elevated }: { elevated: boolean } = $props()
-
   let archivePath = $state('')
   let manifest = $state<archive.Manifest | null>(null)
   let destDir = $state('')
@@ -20,7 +18,8 @@
   const needed = $derived(
     manifest?.contentBytes || (manifest?.partitions ?? []).reduce((sum, p) => sum + p.usedBytes, 0),
   )
-  const canStart = $derived(elevated && !!manifest && !!destDir && !!destInfo && destInfo.freeBytes >= needed)
+  // Restoring into a folder needs no admin rights (the backend does not require them).
+  const canStart = $derived(!!manifest && !!destDir && !!destInfo && destInfo.freeBytes >= needed)
 
   async function chooseArchive() {
     error = null

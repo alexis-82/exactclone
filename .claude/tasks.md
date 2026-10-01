@@ -71,4 +71,4 @@
 - [x] Task 39 (R4+R6): scansione preliminare dei file → `ContentBytes` nel manifest (dimensioni apparenti), usato come totale dell'avanzamento e come spazio necessario al ripristino — DoD: test: avanzamento al 100% esatto; `needed` = somma delle dimensioni apparenti.
 - [x] Task 40 (R5): Windows: notice "destinazione offline" anche quando la clonazione fallisce o viene annullata dopo `PrepareForWrite` — DoD: notice tradotta (check:i18n) e presente nel risultato su errore.
 - [x] Task 41 (R7): cache dello spazio usato per partizione (invalidata da `ListDisks`), riusata da `StartArchive` â€” DoD: test: seconda stima non rimonta le partizioni già misurate.
-- [ ] Task 42 (R8): ripristino senza requisito di privilegi anche nel frontend — DoD: `RestoreTab` non dipende da `elevated`; `npm run check` verde.
+- [x] Task 42 (R8): ripristino senza requisito di privilegi anche nel frontend — DoD: `RestoreTab` non dipende da `elevated`; `npm run check` verde.

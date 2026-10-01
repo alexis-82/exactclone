@@ -95,7 +95,7 @@
 <main>
   {#if ready}
     <div hidden={tab !== 'backup'}><BackupTab {elevated} {devSafe} /></div>
-    <div hidden={tab !== 'restore'}><RestoreTab {elevated} /></div>
+    <div hidden={tab !== 'restore'}><RestoreTab /></div>
   {/if}
 </main>
 

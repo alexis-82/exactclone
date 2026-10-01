@@ -93,3 +93,18 @@ Nessuna: il progetto è nuovo e non c'è codice preesistente.
 ## Prossimo passo
 
 Ci sono blocker e major → tornare a `/implement` per R1–R4 (R5–R8 si possono includere nello stesso giro), poi rilanciare `/test`. R1 va corretto **prima** di qualsiasi uso del ripristino su Linux.
+
+---
+
+## Stato delle correzioni (dopo /implement)
+
+| # | Stato | Commit / test |
+|---|---|---|
+| R1 | corretto | `Extract` rifiuta entry sotto un link e link che attraversano altri link; sostituisce i symlink esistenti. Test: `TestExtractSymlinkChainDoesNotEscape`, `TestExtractRejectsWritingThroughSymlink`, `TestExtractKeepsLegitimateRelativeLinks`, `TestExtractReplacesExistingSymlinkInsteadOfFollowing`. Da rieseguire su Linux (semantica POSIX). |
+| R2 | corretto | `SystemPartition` del registro mappata al disco e marcata di sistema. Test: `TestBootSystemPartitionDisk`. |
+| R3 | corretto | File accorciati o illeggibili completati con zeri + avviso. Test: `TestCreateSurvivesShrinkingAndUnreadableFiles`. |
+| R4 | corretto | `ContentBytes` (dimensione apparente) nel manifest, usato come spazio necessario al ripristino. Test: `TestScanMatchesCreate`, `TestRestoreNeeded`. |
+| R5 | corretto | Notice `dest_offline` dopo errore/annullamento su Windows. Test: `TestCloneNotices`. |
+| R6 | corretto | Fase "scan" preliminare: il totale dell'avanzamento è la somma delle dimensioni dei file. Test: `TestCA3ArchiveAndRestore` (100% esatto con stima volutamente errata). |
+| R7 | corretto | Cache dello spazio usato per partizione (chiave con seriale e dimensione), svuotata da `ListDisks`. Test: `TestEstimateCachesUsage`. |
+| R8 | corretto | Ripristino senza requisito di privilegi anche nel frontend. |
