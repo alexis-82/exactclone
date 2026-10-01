@@ -1,6 +1,6 @@
 # Task — Disk Clone Tool
 
-> Legenda: `[x]` fatto e DoD verificato � `[~]` codice fatto, DoD di integrazione da verificare (Linux: `sudo go test -tags integration -count=1 -v ./internal/itest/`; Windows: sessione amministratore) � `[ ]` da fare
+> Legenda: `[x]` fatto e DoD verificato · `[~]` codice fatto, DoD di integrazione da verificare (Linux: `sudo go test -tags integration -count=1 -v ./internal/itest/`; Windows: sessione amministratore) · `[ ]` da fare
 
 ## Fase 0 — Setup
 
