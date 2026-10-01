@@ -1,0 +1,17 @@
+{
+   "blockdevices": [
+      {"name":"sda", "path":"/dev/sda", "size":500107862016, "model":"Samsung SSD 860 EVO 500GB", "serial":"S3Z1NB0K123456", "tran":"sata", "type":"disk", "fstype":null, "label":null, "mountpoints":[null], "pkname":null, "rm":false,
+         "children": [
+            {"name":"sda1", "path":"/dev/sda1", "size":536870912, "model":null, "serial":null, "tran":null, "type":"part", "fstype":"vfat", "label":null, "mountpoints":["/boot/efi"], "pkname":"sda", "rm":false},
+            {"name":"sda2", "path":"/dev/sda2", "size":499570991104, "model":null, "serial":null, "tran":null, "type":"part", "fstype":"ext4", "label":null, "mountpoints":["/"], "pkname":"sda", "rm":false}
+         ]
+      },
+      {"name":"sdb", "path":"/dev/sdb", "size":15938355200, "model":"DataTraveler 3.0", "serial":"E0D55EA5741234", "tran":"usb", "type":"disk", "fstype":null, "label":null, "mountpoints":[null], "pkname":null, "rm":true,
+         "children": [
+            {"name":"sdb1", "path":"/dev/sdb1", "size":15937306624, "model":null, "serial":null, "tran":null, "type":"part", "fstype":"exfat", "label":"KINGSTON", "mountpoints":["/media/mario/KINGSTON"], "pkname":"sdb", "rm":true}
+         ]
+      },
+      {"name":"sr0", "path":"/dev/sr0", "size":1073741312, "model":"DVD-RAM", "serial":"x", "tran":"sata", "type":"rom", "fstype":null, "label":null, "mountpoints":[null], "pkname":null, "rm":true},
+      {"name":"loop0", "path":"/dev/loop0", "size":268435456, "model":null, "serial":null, "tran":null, "type":"loop", "fstype":null, "label":null, "mountpoints":[null], "pkname":null, "rm":false}
+   ]
+}

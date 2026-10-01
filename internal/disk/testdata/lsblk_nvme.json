@@ -1,0 +1,11 @@
+{
+   "blockdevices": [
+      {"name":"nvme0n1", "path":"/dev/nvme0n1", "size":1024209543168, "model":"WD_BLACK SN850X 1000GB", "serial":"22442V800123", "tran":"nvme", "type":"disk", "fstype":null, "label":null, "mountpoints":[null], "pkname":null, "rm":false,
+         "children": [
+            {"name":"nvme0n1p1", "path":"/dev/nvme0n1p1", "size":104857600, "model":null, "serial":null, "tran":"nvme", "type":"part", "fstype":"vfat", "label":"SYSTEM", "mountpoints":[null], "pkname":"nvme0n1", "rm":false},
+            {"name":"nvme0n1p2", "path":"/dev/nvme0n1p2", "size":16777216, "model":null, "serial":null, "tran":"nvme", "type":"part", "fstype":null, "label":null, "mountpoints":[null], "pkname":"nvme0n1", "rm":false},
+            {"name":"nvme0n1p3", "path":"/dev/nvme0n1p3", "size":1023551668224, "model":null, "serial":null, "tran":"nvme", "type":"part", "fstype":"ntfs", "label":"Windows", "mountpoints":[null], "pkname":"nvme0n1", "rm":false}
+         ]
+      }
+   ]
+}

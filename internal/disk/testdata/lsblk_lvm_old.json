@@ -1,0 +1,18 @@
+{
+   "blockdevices": [
+      {"name":"sdc", "path":"/dev/sdc", "size":"2000398934016", "model":"WDC WD20EZRZ-00Z5HB0", "serial":"WD-WCC4M1234567", "tran":"usb", "type":"disk", "fstype":null, "label":null, "mountpoint":null, "pkname":null, "rm":"0",
+         "children": [
+            {"name":"sdc1", "path":"/dev/sdc1", "size":"1073741824", "model":null, "serial":null, "tran":null, "type":"part", "fstype":"ext4", "label":"boot", "mountpoint":"/mnt/oldboot", "pkname":"sdc", "rm":"0"},
+            {"name":"sdc2", "path":"/dev/sdc2", "size":"1999323095040", "model":null, "serial":null, "tran":null, "type":"part", "fstype":"crypto_LUKS", "label":null, "mountpoint":null, "pkname":"sdc", "rm":"0",
+               "children": [
+                  {"name":"luks-abc", "path":"/dev/mapper/luks-abc", "size":"1999306317824", "model":null, "serial":null, "tran":null, "type":"crypt", "fstype":"LVM2_member", "label":null, "mountpoint":null, "pkname":"sdc2", "rm":"0",
+                     "children": [
+                        {"name":"vg-root", "path":"/dev/mapper/vg-root", "size":"1999306317824", "model":null, "serial":null, "tran":null, "type":"lvm", "fstype":"ext4", "label":null, "mountpoint":"/", "pkname":"luks-abc", "rm":"0"}
+                     ]
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

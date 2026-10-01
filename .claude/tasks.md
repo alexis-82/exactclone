@@ -1,5 +1,7 @@
 # Task — Disk Clone Tool
 
+> Legenda: `[x]` fatto e DoD verificato � `[~]` codice fatto, DoD di integrazione da verificare (Linux: `sudo go test -tags integration -count=1 -v ./internal/itest/`; Windows: sessione amministratore) � `[ ]` da fare
+
 ## Fase 0 — Setup
 
 - [x] Task 1: Installare Go (≥ 1.22) e la Wails CLI v2 (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`) — DoD: `go version` e `wails doctor` non riportano errori bloccanti su Windows.
@@ -17,11 +19,11 @@
 
 ## Fase 2 — Linux
 
-- [ ] Task 10: `disk.List()` Linux tramite `lsblk -J -b …` → `[]Disk` con partizioni, FS, mountpoint, flag rimovibile/USB; colonna `MOUNTPOINTS` con fallback a `MOUNTPOINT` per util-linux < 2.37; `FSUSED` non usato (F6) — DoD: test di parsing su 3 fixture JSON (USB singola, NVMe con 3 partizioni, disco con LVM/crypto marcato come non supportato).
-- [ ] Task 11: Rilevamento del disco di sistema su Linux (padre di `/`, `/boot`, `/boot/efi`, swap) — DoD: test su fixture; sulla macchina reale il disco di sistema risulta `IsSystem=true`.
-- [ ] Task 12: `rawdev.Open` Linux (read-only / write, dimensione via `BLKGETSIZE64`, `fsync` alla chiusura, `DropCache()` = `fsync` + `ioctl(BLKFLSBUF)` + `posix_fadvise(DONTNEED)` — F4) — DoD: test di integrazione (build tag `integration`, root) con due loop device da 256 MiB: clone + verifica OK; dopo `DropCache` una corruzione scritta direttamente sul file di backing del loop viene rilevata dalla verifica.
-- [ ] Task 12b: `disk.PrepareForWrite` / `disk.FinishWrite` Linux: smontaggio automatico (`umount`) di tutte le partizioni montate di origine e destinazione dopo la conferma; a fine scrittura `ioctl(BLKRRPART)` sulla destinazione (F3) — DoD: test di integrazione: con una partizione del loop montata la clonazione procede dopo lo smontaggio; dopo la clonazione `lsblk` mostra le partizioni nuove senza riconnettere.
-- [ ] Task 13: `mount.ReadOnly(partition) (path, cleanup)` Linux con `mount -o ro` in una cartella temporanea + `umount` nel cleanup; se la partizione è **già montata** (automount udisks) riusa il mountpoint e il cleanup non smonta (F3); `mount.Usage(path)` via `statfs` (F6) — DoD: test di integrazione su loop con ext4 e vfat: file leggibili, dopo il cleanup la cartella è smontata e rimossa; con partizione già montata il mountpoint originale resta intatto; `Usage` coincide con `df`.
+- [x] Task 10: `disk.List()` Linux tramite `lsblk -J -b …` → `[]Disk` con partizioni, FS, mountpoint, flag rimovibile/USB; colonna `MOUNTPOINTS` con fallback a `MOUNTPOINT` per util-linux < 2.37; `FSUSED` non usato (F6) — DoD: test di parsing su 3 fixture JSON (USB singola, NVMe con 3 partizioni, disco con LVM/crypto marcato come non supportato).
+- [~] Task 11: Rilevamento del disco di sistema su Linux (padre di `/`, `/boot`, `/boot/efi`, swap) — DoD: test su fixture; sulla macchina reale il disco di sistema risulta `IsSystem=true`.
+- [~] Task 12: `rawdev.Open` Linux (read-only / write, dimensione via `BLKGETSIZE64`, `fsync` alla chiusura, `DropCache()` = `fsync` + `ioctl(BLKFLSBUF)` + `posix_fadvise(DONTNEED)` — F4) — DoD: test di integrazione (build tag `integration`, root) con due loop device da 256 MiB: clone + verifica OK; dopo `DropCache` una corruzione scritta direttamente sul file di backing del loop viene rilevata dalla verifica.
+- [~] Task 12b: `disk.PrepareForWrite` / `disk.FinishWrite` Linux: smontaggio automatico (`umount`) di tutte le partizioni montate di origine e destinazione dopo la conferma; a fine scrittura `ioctl(BLKRRPART)` sulla destinazione (F3) — DoD: test di integrazione: con una partizione del loop montata la clonazione procede dopo lo smontaggio; dopo la clonazione `lsblk` mostra le partizioni nuove senza riconnettere.
+- [~] Task 13: `mount.ReadOnly(partition) (path, cleanup)` Linux con `mount -o ro` in una cartella temporanea + `umount` nel cleanup; se la partizione è **già montata** (automount udisks) riusa il mountpoint e il cleanup non smonta (F3); `mount.Usage(path)` via `statfs` (F6) — DoD: test di integrazione su loop con ext4 e vfat: file leggibili, dopo il cleanup la cartella è smontata e rimossa; con partizione già montata il mountpoint originale resta intatto; `Usage` coincide con `df`.
 
 ## Fase 3 — Windows
 
