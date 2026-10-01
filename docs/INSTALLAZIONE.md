@@ -352,3 +352,14 @@ L'app è stata avviata senza elevazione (ad esempio con `wails dev` da una shell
 ### `go test -race` non funziona su Windows
 
 Il race detector richiede CGO e un compilatore C (es. MSYS2/MinGW). Non è necessario per i test del progetto.
+
+### Ho cambiato l'icona ma l'exe mostra ancora quella vecchia
+
+L'icona si cambia sostituendo `build/appicon.png` (quadrata, consigliato 1024×1024 con sfondo trasparente; la usa anche `install.sh` su Linux). Su Windows l'exe usa però `build/windows/icon.ico`, che Wails genera da `appicon.png` **solo se non esiste**. Dopo aver cambiato il PNG cancella quindi l'`.ico` e ricompila:
+
+```powershell
+Remove-Item build\windows\icon.ico
+wails build
+```
+
+Se Esplora risorse mostra ancora l'icona precedente è la cache delle icone di Windows: `ie4uinit.exe -show` (oppure rinomina l'exe per verificare).
