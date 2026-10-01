@@ -119,3 +119,9 @@ Nessun task viola i Non-Goals.
 ## Stato mitigazioni (aggiornato dopo /plan-tasks)
 
 Tutti i finding F1–F13 sono stati integrati in `plan.md` e `tasks.md` (nuovi task **12b** e **17b**; modificati i task 5, 6, 7, 8, 9, 10, 12, 13, 17, 18, 19, 21, 23, 26, 28, 33, 35). CA2 della spec aggiornato con la condizione di F2. Nessun blocker aperto.
+
+## Verifica sul campo (integrazione Windows su VHD, shell amministratore)
+
+- **F1 confermato mitigato**: nessun `ACCESS_DENIED` clonando una sorgente GPT a 3 partizioni su un disco con volume montato.
+- **F2 confermato**: la destinazione resta offline dopo la clonazione.
+- F3, F4 (Linux) e la parte Linux di F8 restano da verificare su Linux.
