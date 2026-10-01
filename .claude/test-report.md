@@ -40,7 +40,7 @@ Race detector (`-race`) non disponibile: richiede CGO/gcc, assente su questa mac
 | **CA1** clone + SHA-256 + "Verifica OK" | Unit: `clone` (copia 0 B…100 MiB, `HeadLast`, errori, verify + mismatch). Integrazione: `TestCloneAndVerifyLoop` (Linux, include corruzione rilevata dopo drop cache), `TestCloneGPTWithMountedVolumes` (Windows VHD). UI: messaggio `result.verifyOk`. | **Parziale** — logica verificata; integrazione su device da eseguire (admin / Linux); chiavette reali in T35 |
 | **CA2** clone avviabile | Solo manuale (T35). | **Non verificato** |
 | **CA3** archivio NTFS+FAT32 (+ext4) e ripristino | Behavior: `TestCA3ArchiveAndRestore`. Unit: round trip, symlink/junction, FIFO (Linux). Integrazione: `TestArchiveVolumeWithoutLetter` (VHD), `TestMountReadOnly` ext4/vfat (Linux). | **Parziale** — verde su cartelle; partizioni reali da eseguire |
-| **CA4** apribile con strumenti standard | `TestCA4StandardTools`. | **NON soddisfatto su questa macchina** — vedi difetto D1 |
+| **CA4** apribile con strumenti standard | `TestCA4StandardTools`: estrazione con 7-Zip-zstd 26.02 (`C:\Program Files\7-Zip-Zstandard\7z.exe`), file identici per dimensione e SHA-256, `manifest.json` visibile. | **Verde su Windows** (con 7-Zip-zstd, vedi D1); Linux `tar --zstd` da eseguire |
 | **CA5** blocco destinazione piccola / spazio insufficiente | Unit: `validate` (`dest_too_small`, `insufficient_space`, `fat32_limit`); UI verificata a schermo (dischi troppo piccoli disabilitati). | **Verde** |
 | **CA6** no stessa unità, no disco di sistema | Unit: `validate`; UI verificata a schermo (origine e disco di sistema disabilitati come destinazione, disco di sistema non selezionabile come origine). | **Verde** |
 | **CA7** annulla entro pochi secondi, destinazione incompleta, archivio parziale cancellato | Unit: `TestCopyCancel`, `TestVerifyCanceled`, `TestCreateFileCancelRemovesPartial`, `TestJobCancel`. Behavior: `TestCA7CancelArchive`, `TestCA7CancelRestore`. | **Verde** (clone su device reale da confermare) |
@@ -50,7 +50,11 @@ Race detector (`-race`) non disponibile: richiede CGO/gcc, assente su questa mac
 
 ## Difetti / problemi aperti
 
-### D1 — CA4: su questo Windows nessuno strumento standard apre il `.tar.zst`
+### D1 — CA4: su questo Windows nessuno strumento standard apre il `.tar.zst` — **RISOLTO (opzione a)**
+
+Aggiornamento: installato [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) 26.02; `TestCA4StandardTools` ora **passa**. Il test cerca la prima installazione di 7-Zip con codec zstd (anche in `C:\Program Files\7-Zip-Zstandard\`). CA4 nella spec aggiornato per indicare 7-Zip-zstd; link aggiunto a `README.md` e `docs/INSTALLAZIONE.md`.
+
+Situazione iniziale:
 - 7-Zip installato: **22.01** (2022), elenco formati senza zstd → `7z x backup.tar.zst` esce con codice 2.
 - `tar.exe` di Windows 10: bsdtar 3.5.2 compilato **senza** libzstd.
 - `tar` di Git for Windows: GNU tar, richiede il programma `zstd` esterno, non installato.

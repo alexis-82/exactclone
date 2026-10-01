@@ -175,7 +175,7 @@ func TestCA4StandardTools(t *testing.T) {
 	want := snapshot(t, part.Path)
 	dest := t.TempDir()
 
-	if sevenZip := find7z(); sevenZip != "" && sevenZipSupportsZstd(sevenZip) {
+	if sevenZip := find7zWithZstd(); sevenZip != "" {
 		if b, err := exec.Command(sevenZip, "x", "-y", "-o"+dest, out).CombinedOutput(); err != nil {
 			t.Fatalf("7z cannot decompress .zst: %v\n%s", err, b)
 		}
@@ -204,9 +204,12 @@ func TestCA4StandardTools(t *testing.T) {
 	}
 }
 
-func find7z() string {
-	for _, p := range []string{"7z", `C:\Program Files\7-Zip\7z.exe`, "7zz"} {
-		if path, err := exec.LookPath(p); err == nil {
+// find7zWithZstd returns the first installed 7-Zip that can decode zstd
+// (7-Zip-zstd: https://github.com/mcmilk/7-Zip-zstd/releases).
+func find7zWithZstd() string {
+	candidates := []string{"7z", "7zz", `C:\Program Files\7-Zip-Zstandard\7z.exe`, `C:\Program Files\7-Zip\7z.exe`}
+	for _, c := range candidates {
+		if path, err := exec.LookPath(c); err == nil && sevenZipSupportsZstd(path) {
 			return path
 		}
 	}

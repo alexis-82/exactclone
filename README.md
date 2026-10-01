@@ -88,6 +88,13 @@ go test -tags integration -count=1 -v ./internal/itest/
 $env:DISKCLONE_EXPECT_ELEVATED = "1"; go test -count=1 ./internal/privilege/
 ```
 
+## Aprire gli archivi senza Disk Clone
+
+Gli archivi `.tar.zst` sono tar standard compressi con zstd e si possono aprire anche con altri programmi:
+
+- **Windows**: [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) — il 7-Zip ufficiale e il `tar.exe` di Windows 10 non supportano zstd. Si apre in due passaggi: `.tar.zst` → `.tar` → file.
+- **Linux**: `tar --zstd -xf archivio.tar.zst` (serve il pacchetto `zstd`).
+
 ## Note di comportamento
 
 - Windows: durante la clonazione i volumi di origine e destinazione vengono bloccati e smontati e la destinazione viene messa **offline**. Al termine il clone resta offline: va scollegato senza portarlo online sullo stesso PC, altrimenti Windows ne cambia la firma e il clone non si avvia.

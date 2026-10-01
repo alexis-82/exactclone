@@ -50,7 +50,7 @@ Utente tecnico o semi-tecnico (sistemista, tecnico PC, utente avanzato) che coll
 - [ ] CA1 — Clonazione Unità → Unità di una chiavetta USB su una seconda chiavetta ≥ dimensione: lo SHA-256 dei primi N byte (N = dimensione origine) delle due unità coincide; con verifica attiva l'app lo riporta come "Verifica OK".
 - [ ] CA2 — Un disco clonato bit a bit con sistema operativo avviabile resta avviabile (a condizione che il clone non venga portato online sulla stessa macchina Windows che lo ha creato — vedi analisi F2).
 - [ ] CA3 — Backup Unità → File di una partizione NTFS e una FAT32 (e ext4 su Linux): l'archivio contiene una sottocartella per ciascuna partizione selezionata con tutti i file; dopo il ripristino in una cartella, file e dimensioni coincidono e un campione verificato via hash è identico.
-- [ ] CA4 — L'archivio `.tar.zst` prodotto si apre con strumenti standard (`tar --zstd -xf` su Linux, 7-Zip su Windows).
+- [ ] CA4 — L'archivio `.tar.zst` prodotto si apre con strumenti standard (`tar --zstd -xf` su Linux, [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) su Windows: il 7-Zip ufficiale e il `tar.exe` di Windows 10 non supportano zstd — vedi test-report D1).
 - [ ] CA5 — Se destinazione < origine (clonazione) o spazio libero insufficiente per la stima dell'archivio, l'avvio è bloccato con messaggio chiaro.
 - [ ] CA6 — Non è possibile selezionare la stessa unità come origine e destinazione, né il disco di sistema come destinazione.
 - [ ] CA7 — "Annulla" interrompe l'operazione entro pochi secondi; l'app segnala che la destinazione è incompleta (e cancella l'archivio parziale in Unità → File).

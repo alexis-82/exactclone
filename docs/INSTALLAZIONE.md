@@ -26,6 +26,7 @@ Questa guida spiega come preparare l'ambiente, compilare e installare Disk Clone
 | Git | qualsiasi | scaricare il progetto (facoltativo) |
 | WebView2 | — | solo Windows: motore dell'interfaccia (già presente su Windows 10/11) |
 | WebKitGTK 4.1 + GTK 3 | — | solo Linux: motore dell'interfaccia |
+| [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) | facoltativo | solo Windows: aprire gli archivi `.tar.zst` senza Disk Clone |
 
 Linux va compilato **su Linux** (o in WSL2): Wails su Linux usa CGO e WebKitGTK e non si compila da Windows.
 
@@ -101,7 +102,20 @@ Non serve installazione: copia `diskclone.exe` dove preferisci (es. `C:\Program 
 
 Per disinstallare basta cancellare l'exe e, se vuoi, la cartella `%APPDATA%\diskclone`.
 
-### 2.5 Sviluppo con ricarica automatica
+### 2.5 Aprire gli archivi `.tar.zst` a mano (facoltativo)
+
+Il 7-Zip ufficiale e il `tar.exe` di Windows 10 **non** supportano zstd. Per aprire un backup senza Disk Clone installa **7-Zip-zstd**: <https://github.com/mcmilk/7-Zip-zstd/releases> (si installa in `C:\Program Files\7-Zip-Zstandard\`).
+
+L'archivio si apre in due passaggi: doppio clic su `.tar.zst` → compare il `.tar` → doppio clic sul `.tar` → file. Da riga di comando:
+
+```powershell
+& "C:\Program Files\7-Zip-Zstandard\7z.exe" x backup.tar.zst -oC:\estratto
+& "C:\Program Files\7-Zip-Zstandard\7z.exe" x C:\estratto\backup.tar -oC:\estratto
+```
+
+7-Zip-zstd serve anche al test `TestCA4StandardTools` (sezione 4.1), che altrimenti viene saltato.
+
+### 2.6 Sviluppo con ricarica automatica
 
 ```powershell
 wails dev
