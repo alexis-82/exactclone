@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store'
 
-export type JobKind = 'clone' | 'archive' | 'restore'
+export type JobKind = 'clone' | 'image' | 'restore'
 export type JobStatus = 'idle' | 'running' | 'done' | 'failed' | 'canceled'
 
 export interface Snapshot {
@@ -11,11 +11,6 @@ export interface Snapshot {
   etaSeconds: number
 }
 
-export interface Warning {
-  path: string
-  reason: string
-}
-
 export interface JobState {
   status: JobStatus
   kind: JobKind | null
@@ -24,12 +19,11 @@ export interface JobState {
   phases: string[]
   error: string
   notices: string[]
-  warnings: Warning[]
   canceling: boolean
 }
 
 export const idleJob: JobState = {
-  status: 'idle', kind: null, phase: '', snap: null, phases: [], error: '', notices: [], warnings: [], canceling: false,
+  status: 'idle', kind: null, phase: '', snap: null, phases: [], error: '', notices: [], canceling: false,
 }
 
 export const job = writable<JobState>(idleJob)

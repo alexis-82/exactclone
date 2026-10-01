@@ -3,13 +3,11 @@
 import {mount} from '../models';
 import {main} from '../models';
 import {disk} from '../models';
-import {archive} from '../models';
+import {image} from '../models';
 
 export function Cancel():Promise<void>;
 
 export function DestinationInfo(arg1:string):Promise<mount.Info>;
-
-export function EstimateArchive(arg1:string,arg2:Array<string>):Promise<main.Estimate>;
 
 export function GetConfig():Promise<main.Config>;
 
@@ -19,18 +17,16 @@ export function IsElevated():Promise<boolean>;
 
 export function ListDisks():Promise<Array<disk.Disk>>;
 
-export function PickArchive():Promise<string>;
-
-export function PickFolder():Promise<string>;
+export function PickImage():Promise<string>;
 
 export function PickSaveFile(arg1:string):Promise<string>;
 
-export function ReadArchiveInfo(arg1:string):Promise<archive.Manifest>;
+export function ReadImageInfo(arg1:string):Promise<image.Info>;
 
 export function SetLanguage(arg1:string):Promise<void>;
 
-export function StartArchive(arg1:string,arg2:Array<string>,arg3:string):Promise<void>;
-
 export function StartClone(arg1:string,arg2:string,arg3:boolean):Promise<void>;
 
-export function StartRestore(arg1:string,arg2:string):Promise<void>;
+export function StartImage(arg1:string,arg2:string,arg3:boolean):Promise<void>;
+
+export function StartRestoreImage(arg1:string,arg2:string,arg3:boolean):Promise<void>;

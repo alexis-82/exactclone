@@ -10,10 +10,6 @@ export function DestinationInfo(arg1) {
   return window['go']['main']['App']['DestinationInfo'](arg1);
 }
 
-export function EstimateArchive(arg1, arg2) {
-  return window['go']['main']['App']['EstimateArchive'](arg1, arg2);
-}
-
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
@@ -30,34 +26,30 @@ export function ListDisks() {
   return window['go']['main']['App']['ListDisks']();
 }
 
-export function PickArchive() {
-  return window['go']['main']['App']['PickArchive']();
-}
-
-export function PickFolder() {
-  return window['go']['main']['App']['PickFolder']();
+export function PickImage() {
+  return window['go']['main']['App']['PickImage']();
 }
 
 export function PickSaveFile(arg1) {
   return window['go']['main']['App']['PickSaveFile'](arg1);
 }
 
-export function ReadArchiveInfo(arg1) {
-  return window['go']['main']['App']['ReadArchiveInfo'](arg1);
+export function ReadImageInfo(arg1) {
+  return window['go']['main']['App']['ReadImageInfo'](arg1);
 }
 
 export function SetLanguage(arg1) {
   return window['go']['main']['App']['SetLanguage'](arg1);
 }
 
-export function StartArchive(arg1, arg2, arg3) {
-  return window['go']['main']['App']['StartArchive'](arg1, arg2, arg3);
-}
-
 export function StartClone(arg1, arg2, arg3) {
   return window['go']['main']['App']['StartClone'](arg1, arg2, arg3);
 }
 
-export function StartRestore(arg1, arg2) {
-  return window['go']['main']['App']['StartRestore'](arg1, arg2);
+export function StartImage(arg1, arg2, arg3) {
+  return window['go']['main']['App']['StartImage'](arg1, arg2, arg3);
+}
+
+export function StartRestoreImage(arg1, arg2, arg3) {
+  return window['go']['main']['App']['StartRestoreImage'](arg1, arg2, arg3);
 }

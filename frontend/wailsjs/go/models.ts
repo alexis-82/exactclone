@@ -1,65 +1,3 @@
-export namespace archive {
-	
-	export class ManifestPartition {
-	    name: string;
-	    fsType: string;
-	    label: string;
-	    usedBytes: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new ManifestPartition(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.name = source["name"];
-	        this.fsType = source["fsType"];
-	        this.label = source["label"];
-	        this.usedBytes = source["usedBytes"];
-	    }
-	}
-	export class Manifest {
-	    version: number;
-	    // Go type: time
-	    createdAt: any;
-	    contentBytes: number;
-	    sourceDisk: string;
-	    partitions: ManifestPartition[];
-	
-	    static createFrom(source: any = {}) {
-	        return new Manifest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.version = source["version"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.contentBytes = source["contentBytes"];
-	        this.sourceDisk = source["sourceDisk"];
-	        this.partitions = this.convertValues(source["partitions"], ManifestPartition);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-
-}
-
 export namespace disk {
 	
 	export class Partition {
@@ -137,46 +75,29 @@ export namespace disk {
 
 }
 
-export namespace main {
+export namespace image {
 	
-	export class Config {
-	    language: string;
+	export class Info {
+	    format: string;
+	    version: number;
+	    sourceDisk: string;
+	    sizeBytes: number;
+	    // Go type: time
+	    createdAt: any;
+	    sha256?: string;
 	
 	    static createFrom(source: any = {}) {
-	        return new Config(source);
+	        return new Info(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.language = source["language"];
-	    }
-	}
-	export class PartitionEstimate {
-	    id: string;
-	    usedBytes: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new PartitionEstimate(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.usedBytes = source["usedBytes"];
-	    }
-	}
-	export class Estimate {
-	    totalBytes: number;
-	    partitions: PartitionEstimate[];
-	
-	    static createFrom(source: any = {}) {
-	        return new Estimate(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.totalBytes = source["totalBytes"];
-	        this.partitions = this.convertValues(source["partitions"], PartitionEstimate);
+	        this.format = source["format"];
+	        this.version = source["version"];
+	        this.sourceDisk = source["sourceDisk"];
+	        this.sizeBytes = source["sizeBytes"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.sha256 = source["sha256"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -196,6 +117,23 @@ export namespace main {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace main {
+	
+	export class Config {
+	    language: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Config(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.language = source["language"];
+	    }
 	}
 
 }

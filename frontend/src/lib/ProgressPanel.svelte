@@ -6,7 +6,7 @@
   let { job, oncancel, onclose }: { job: JobState; oncancel: () => void; onclose: () => void } = $props()
 
   const err = $derived(job.status === 'failed' ? errorParts($lang, job.error) : null)
-  const verified = $derived(job.status === 'done' && job.kind === 'clone' && job.phases.includes('verify'))
+  const verified = $derived(job.status === 'done' && job.phases.includes('verify'))
 </script>
 
 <div class="backdrop">
@@ -46,16 +46,6 @@
       {#each job.notices as notice}
         <p class="notice">{$t(`notices.${notice}`)}</p>
       {/each}
-      {#if job.warnings.length > 0}
-        <details>
-          <summary>{$t('result.warnings', { count: job.warnings.length })}</summary>
-          <ul class="warnings">
-            {#each job.warnings as w}
-              <li><code>{w.path}</code>: {w.reason}</li>
-            {/each}
-          </ul>
-        </details>
-      {/if}
       <div class="actions">
         <button class="primary" onclick={onclose}>{$t('result.close')}</button>
       </div>
@@ -81,10 +71,5 @@
     background: var(--notice-bg);
     border-left: 4px solid var(--warn);
     padding: 8px 12px;
-  }
-  .warnings {
-    max-height: 200px;
-    overflow: auto;
-    font-size: 12px;
   }
 </style>

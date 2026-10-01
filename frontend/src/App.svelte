@@ -6,7 +6,7 @@
   import BackupTab from './lib/BackupTab.svelte'
   import RestoreTab from './lib/RestoreTab.svelte'
   import ProgressPanel from './lib/ProgressPanel.svelte'
-  import { idleJob, job, type JobState, type Snapshot, type Warning } from './lib/job'
+  import { idleJob, job, type JobState, type Snapshot } from './lib/job'
 
   let tab = $state<'backup' | 'restore'>('backup')
   let elevated = $state(true)
@@ -40,14 +40,13 @@
     })
     const offDone = EventsOn(
       'job:done',
-      (e: { kind: JobState['kind']; status: JobState['status']; error?: string; notices?: string[]; warnings?: Warning[] }) => {
+      (e: { kind: JobState['kind']; status: JobState['status']; error?: string; notices?: string[] }) => {
         job.update((j) => ({
           ...j,
           status: e.status,
           kind: e.kind,
           error: e.error ?? '',
           notices: e.notices ?? [],
-          warnings: e.warnings ?? [],
           canceling: false,
         }))
       },
@@ -95,7 +94,7 @@
 <main>
   {#if ready}
     <div hidden={tab !== 'backup'}><BackupTab {elevated} {devSafe} /></div>
-    <div hidden={tab !== 'restore'}><RestoreTab /></div>
+    <div hidden={tab !== 'restore'}><RestoreTab {elevated} {devSafe} /></div>
   {/if}
 </main>
 

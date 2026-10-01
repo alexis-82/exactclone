@@ -45,10 +45,10 @@ for (const f of goFiles) {
     if (!(`notices.${m[1]}` in it)) problems.push(`${f}: untranslated notice ${m[1]}`)
   }
 }
-for (const phase of ['copy', 'verify', 'scan', 'archive', 'restore']) {
+for (const phase of ['copy', 'verify']) {
   if (!(`progress.phase.${phase}` in it)) problems.push(`missing progress.phase.${phase}`)
 }
-for (const kind of ['clone', 'archive', 'restore']) {
+for (const kind of ['clone', 'image', 'restore']) {
   if (!(`progress.${kind}` in it)) problems.push(`missing progress.${kind}`)
 }
 
