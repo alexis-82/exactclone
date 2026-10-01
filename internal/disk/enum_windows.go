@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
 )
 
 const (
@@ -115,7 +116,7 @@ func cString(buf []byte, off uint32) string {
 // List returns the physical disks of the machine.
 func List() ([]Disk, error) {
 	vols := listVolumes()
-	systemDisks := systemDiskNumbers()
+	systemDisks := systemDiskNumbers(vols)
 	disks := []Disk{}
 	for i := 0; i < maxPhysicalDrives; i++ {
 		path := fmt.Sprintf(`\\.\PhysicalDrive%d`, i)
@@ -308,8 +309,9 @@ func partitionFromVolume(p Partition, v volume) Partition {
 	return p
 }
 
-// systemDiskNumbers returns the disks holding the Windows system volume.
-func systemDiskNumbers() map[uint32]bool {
+// systemDiskNumbers returns the disks holding the Windows volume (C:) and
+// the boot "system partition" (EFI/boot manager), which is often on another disk.
+func systemDiskNumbers(vols []volume) map[uint32]bool {
 	out := map[uint32]bool{}
 	drive := os.Getenv("SystemDrive")
 	if drive == "" {
@@ -317,12 +319,49 @@ func systemDiskNumbers() map[uint32]bool {
 	}
 	mp, _ := windows.UTF16PtrFromString(drive + `\`)
 	buf := make([]uint16, windows.MAX_PATH)
-	if err := windows.GetVolumeNameForVolumeMountPoint(mp, &buf[0], uint32(len(buf))); err != nil {
-		return out
+	if err := windows.GetVolumeNameForVolumeMountPoint(mp, &buf[0], uint32(len(buf))); err == nil {
+		sysVols, _ := describeVolume(windows.UTF16ToString(buf))
+		for _, v := range sysVols {
+			out[v.disk] = true
+		}
 	}
-	vols, _ := describeVolume(windows.UTF16ToString(buf))
-	for _, v := range vols {
-		out[v.disk] = true
+	for d := range bootDiskNumbers(vols) {
+		out[d] = true
 	}
 	return out
+}
+
+// bootDiskNumbers maps HKLM\SYSTEM\Setup\SystemPartition (an NT device name
+// such as \Device\HarddiskVolume1) to the disks of that volume.
+func bootDiskNumbers(vols []volume) map[uint32]bool {
+	out := map[uint32]bool{}
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\Setup`, registry.QUERY_VALUE)
+	if err != nil {
+		return out
+	}
+	defer k.Close()
+	device, _, err := k.GetStringValue("SystemPartition")
+	if err != nil || device == "" {
+		return out
+	}
+	for _, v := range vols {
+		if strings.EqualFold(ntDeviceName(v.guidPath), device) {
+			out[v.disk] = true
+		}
+	}
+	return out
+}
+
+// ntDeviceName returns the NT device (\Device\HarddiskVolumeN) of a volume GUID path.
+func ntDeviceName(guidPath string) string {
+	name := strings.TrimSuffix(strings.TrimPrefix(guidPath, `\\?\`), `\`)
+	p, err := windows.UTF16PtrFromString(name)
+	if err != nil {
+		return ""
+	}
+	buf := make([]uint16, windows.MAX_PATH)
+	if _, err := windows.QueryDosDevice(p, &buf[0], uint32(len(buf))); err != nil {
+		return ""
+	}
+	return windows.UTF16ToString(buf)
 }

@@ -45,6 +45,31 @@ func TestListWindows(t *testing.T) {
 	}
 }
 
+// Review R2: the disk with the boot system partition (EFI) is a system disk
+// even when it is not the disk of C:.
+func TestBootSystemPartitionDisk(t *testing.T) {
+	vols := listVolumes()
+	boot := bootDiskNumbers(vols)
+	if len(boot) == 0 {
+		t.Skip("SystemPartition not set or not resolvable on this machine")
+	}
+	sys := systemDiskNumbers(vols)
+	for d := range boot {
+		if !sys[d] {
+			t.Fatalf("boot disk %d not marked as system", d)
+		}
+	}
+	found := false
+	for _, v := range vols {
+		if boot[v.disk] && strings.HasPrefix(ntDeviceName(v.guidPath), `\Device\HarddiskVolume`) {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("NT device names not resolved")
+	}
+}
+
 func TestNormalizeFS(t *testing.T) {
 	for in, want := range map[string]string{"FAT32": "vfat", "FAT": "vfat", "NTFS": "ntfs", "exFAT": "exfat"} {
 		if got := NormalizeFS(in); got != want {

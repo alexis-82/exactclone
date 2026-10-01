@@ -66,7 +66,7 @@
 ## Fase 8 — Correzioni dalla review (`.claude/review.md`)
 
 - [x] Task 36 (R1): `Extract` rifiuta entry il cui percorso passa per un symlink e symlink il cui target attraversa un altro symlink; un file esistente che è un symlink viene sostituito, non seguito â€” DoD: test di regressione `y â†’ .`, `x â†’ y/..`, `x/evil.txt` senza fughe; file sotto un symlink rifiutato con `ErrUnsafePath`.
-- [ ] Task 37 (R2): Windows: disco della system partition EFI (`HKLM\SYSTEM\Setup\SystemPartition`) marcato `IsSystem` — DoD: test che risolve la system partition a un disco marcato di sistema.
+- [x] Task 37 (R2): Windows: disco della system partition EFI (`HKLM\SYSTEM\Setup\SystemPartition`) marcato `IsSystem` — DoD: test che risolve la system partition a un disco marcato di sistema.
 - [ ] Task 38 (R3): file che si accorcia o con errore di lettura durante il backup: completato con zeri + avviso, il job continua — DoD: test con lettura corta e con errore di lettura simulati.
 - [ ] Task 39 (R4+R6): scansione preliminare dei file → `ContentBytes` nel manifest (dimensioni apparenti), usato come totale dell'avanzamento e come spazio necessario al ripristino — DoD: test: avanzamento al 100% esatto; `needed` = somma delle dimensioni apparenti.
 - [ ] Task 40 (R5): Windows: notice "destinazione offline" anche quando la clonazione fallisce o viene annullata dopo `PrepareForWrite` — DoD: notice tradotta (check:i18n) e presente nel risultato su errore.
