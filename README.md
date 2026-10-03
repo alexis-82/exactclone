@@ -97,15 +97,6 @@ Un'immagine è uno stream zstd standard dell'intero disco; le informazioni di Ex
 - **Windows**: [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) — il 7-Zip ufficiale e il `tar.exe` di Windows 10 non supportano zstd.
 - **Linux**: `zstd -d disco.img.zst` (pacchetto `zstd`). Ripristino manuale su un disco: `zstd -dc disco.img.zst | sudo dd of=/dev/sdX bs=16M status=progress conv=fsync`.
 
-## Nome precedente
-
-Il progetto si chiamava **Disk Clone** (`diskclone`). Dopo la rinomina:
-
-- le immagini create con Disk Clone restano compatibili (l'identificativo interno del formato non è cambiato);
-- le impostazioni vengono lette dalla vecchia cartella `diskclone` se quella nuova non esiste ancora;
-- la variabile `DISKCLONE_DEV_SAFE` è ancora accettata insieme a `EXACTCLONE_DEV_SAFE`;
-- su Linux `install.sh` rimuove la vecchia installazione.
-
 ## Note di comportamento
 
 - Windows: durante la copia i volumi dei dischi coinvolti vengono bloccati e smontati e il disco che viene scritto (clonazione, ripristino) viene messo **offline**. Al termine resta offline: va scollegato senza portarlo online sullo stesso PC, altrimenti Windows ne cambia la firma e il clone non si avvia.
