@@ -12,6 +12,18 @@ Richiede privilegi di amministratore (Windows) o root (Linux).
 
 Guida completa a compilazione e installazione: [docs/INSTALLAZIONE.md](docs/INSTALLAZIONE.md).
 
+## Indice
+
+- [Requisiti di sviluppo](#requisiti-di-sviluppo)
+- [Sviluppo](#sviluppo)
+- [Build](#build)
+  - [Windows](#windows)
+  - [Linux](#linux)
+    - [Avvio come root (pkexec)](#avvio-come-root-pkexec)
+- [Test di integrazione (dischi virtuali)](#test-di-integrazione-dischi-virtuali)
+- [Immagini `.img.zst` senza ExactClone](#immagini-imgzst-senza-exactclone)
+- [Note di comportamento](#note-di-comportamento)
+
 ## Requisiti di sviluppo
 
 - Go ≥ 1.25, Node.js 22 LTS (minimo 20.19), Wails CLI v2: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
@@ -96,15 +108,6 @@ Un'immagine è uno stream zstd standard dell'intero disco; le informazioni di Ex
 
 - **Windows**: [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) — il 7-Zip ufficiale e il `tar.exe` di Windows 10 non supportano zstd.
 - **Linux**: `zstd -d disco.img.zst` (pacchetto `zstd`). Ripristino manuale su un disco: `zstd -dc disco.img.zst | sudo dd of=/dev/sdX bs=16M status=progress conv=fsync`.
-
-## Nome precedente
-
-Il progetto si chiamava **Disk Clone** (`diskclone`). Dopo la rinomina:
-
-- le immagini create con Disk Clone restano compatibili (l'identificativo interno del formato non è cambiato);
-- le impostazioni vengono lette dalla vecchia cartella `diskclone` se quella nuova non esiste ancora;
-- la variabile `DISKCLONE_DEV_SAFE` è ancora accettata insieme a `EXACTCLONE_DEV_SAFE`;
-- su Linux `install.sh` rimuove la vecchia installazione.
 
 ## Note di comportamento
 
