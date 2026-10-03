@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://i.ibb.co/1J7Tr5dn/appicon.png" alt="Logo ExactClone" width="128">
+</p>
+
 # ExactClone
 
 Applicazione desktop (Go + Wails v2 + Svelte) per Windows e Linux:

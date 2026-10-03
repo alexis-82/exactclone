@@ -11,8 +11,10 @@
     "email": "alessioabrugiati@gmail.com"
   },
   "info": {
+    "companyName": "Alessio Abrugiati",
     "productName": "ExactClone",
     "productVersion": "1.0.0",
+    "copyright": "Copyright © 2026 Alessio Abrugiati",
     "comments": "Clonazione bit a bit di dischi e immagini .img.zst"
   }
 }
