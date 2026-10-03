@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ExactClone
+Comment=Bit-by-bit disk clones and disk images
+Comment[it]=Clonazione bit a bit di dischi e immagini disco
+Exec=/usr/local/bin/exactclone-launch.sh
+Icon=exactclone
+Terminal=false
+Categories=System;Utility;

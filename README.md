@@ -12,6 +12,18 @@ Richiede privilegi di amministratore (Windows) o root (Linux).
 
 Guida completa a compilazione e installazione: [docs/INSTALLAZIONE.md](docs/INSTALLAZIONE.md).
 
+## Indice
+
+- [Requisiti di sviluppo](#requisiti-di-sviluppo)
+- [Sviluppo](#sviluppo)
+- [Build](#build)
+  - [Windows](#windows)
+  - [Linux](#linux)
+    - [Avvio come root (pkexec)](#avvio-come-root-pkexec)
+- [Test di integrazione (dischi virtuali)](#test-di-integrazione-dischi-virtuali)
+- [Immagini `.img.zst` senza ExactClone](#immagini-imgzst-senza-exactclone)
+- [Note di comportamento](#note-di-comportamento)
+
 ## Requisiti di sviluppo
 
 - Go ≥ 1.25, Node.js 22 LTS (minimo 20.19), Wails CLI v2: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`

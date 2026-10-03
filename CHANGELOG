@@ -1,0 +1,38 @@
+# Changelog
+
+Tutte le modifiche rilevanti a ExactClone sono documentate in questo file.
+
+## [1.0.0] - 2026-10-03
+
+Primo rilascio.
+
+### Aggiunto
+
+- **Unità → Unità**: clonazione bit a bit di un disco su un altro.
+- **Unità → Immagine**: copia bit a bit dell'intero disco in un file immagine compresso `.img.zst`.
+- **Ripristino**: scrittura di un'immagine `.img.zst` su un'unità, con lettura delle informazioni dell'immagine (disco di origine, dimensione, SHA-256) prima di avviare l'operazione.
+- Verifica SHA-256 opzionale al termine di ogni operazione (attiva di default).
+- Barra di avanzamento e annullamento dell'operazione in corso.
+- Immagini in formato zstd standard: si decomprimono anche senza ExactClone (7-Zip-zstd su Windows, `zstd` su Linux).
+- Controlli di sicurezza sulle unità:
+  - il disco di sistema in uso non può essere né origine né destinazione;
+  - una destinazione più piccola dell'origine viene rifiutata;
+  - controllo dello spazio libero e del limite di 4 GiB su FAT32 per le immagini;
+  - un'immagine non può essere salvata sul disco di origine né ripristinata su un disco che la contiene;
+  - le immagini interrotte vengono cancellate e quelle danneggiate rifiutate durante il ripristino.
+- Conferma esplicita prima di ogni operazione che sovrascrive un'unità.
+- Supporto Windows (amd64):
+  - eseguibile unico con richiesta di elevazione UAC;
+  - blocco e smontaggio dei volumi coinvolti, disco scritto messo offline durante la copia.
+- Supporto Linux:
+  - avvio come root tramite `pkexec` con policy polkit e voce di menu;
+  - script `install.sh` per l'installazione;
+  - smontaggio automatico delle partizioni montate e rilettura della tabella delle partizioni a fine copia;
+  - compatibilità con sessioni Wayland tramite XWayland.
+- Interfaccia in italiano e inglese, con la lingua salvata nel file di configurazione.
+- Scheda **Info** con versione, piattaforma, privilegi e formato delle immagini.
+- Avviso quando l'applicazione non ha i privilegi di amministratore/root.
+- Modalità sicura per lo sviluppo (`EXACTCLONE_DEV_SAFE=1`): come destinazione sono ammessi solo dischi USB, VHD e loop.
+- Test di integrazione su dischi virtuali (loop device su Linux, VHDX su Windows).
+
+[1.0.0]: https://github.com/alexis-82/exactclone/releases/tag/v1.0.0
