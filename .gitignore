@@ -2,4 +2,4 @@ node_modules
 frontend/dist
 .claude
 implement*
-build/bin*
+build/bin
