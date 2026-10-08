@@ -14,68 +14,28 @@ Tutte le operazioni hanno la verifica SHA-256 opzionale (attiva di default).
 
 Richiede privilegi di amministratore (Windows) o root (Linux).
 
-Guida completa a compilazione e installazione: [docs/INSTALLAZIONE.md](docs/INSTALLAZIONE.md).
-
 ## Indice
 
-- [Requisiti di sviluppo](#requisiti-di-sviluppo)
-- [Sviluppo](#sviluppo)
-- [Build](#build)
-  - [Windows](#windows)
-  - [Linux](#linux)
-    - [Avvio come root (pkexec)](#avvio-come-root-pkexec)
-- [Test di integrazione (dischi virtuali)](#test-di-integrazione-dischi-virtuali)
+
+- [Linux](#linux)
 - [Immagini `.img.zst` senza ExactClone](#immagini-imgzst-senza-exactclone)
 - [Note di comportamento](#note-di-comportamento)
 
-## Requisiti di sviluppo
-
-- Go ≥ 1.25, Node.js 22 LTS (minimo 20.19), Wails CLI v2: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
-- Windows: WebView2 (già presente su Windows 10/11)
-- Linux: `libgtk-3-dev libwebkit2gtk-4.1-dev build-essential pkg-config`
-
-`wails doctor` verifica l'ambiente.
-
-## Sviluppo
-
-```sh
-wails dev            # app con hot reload
-go test ./...        # test unitari Go
-cd frontend && npm run check && npm run check:i18n
-```
-
 Modalità sicura per lo sviluppo: con `EXACTCLONE_DEV_SAFE=1` come destinazione sono ammessi solo dischi USB, VHD e loop (su Linux compaiono anche i loop device).
 
-## Build
-
-### Windows
-
-```sh
-wails build -platform windows/amd64
-```
-
-Produce `build/bin/exactclone.exe` (eseguibile unico). Il manifest richiede l'elevazione: all'avvio compare la richiesta UAC.
 
 ### Linux
 
-Va compilato su Linux (o in WSL2): Wails usa CGO e WebKitGTK, quindi non si cross-compila da Windows.
+Installazione del lanciatore:
 
 ```sh
-wails build -tags webkit2_41
 sudo sh build/linux/install.sh
 ```
 
-`install.sh` installa:
-
-| File | Destinazione |
-|---|---|
-| eseguibile | `/usr/local/bin/exactclone` |
-| launcher | `/usr/local/bin/exactclone-launch.sh` |
-| helper root | `/usr/local/libexec/exactclone-root` |
-| policy polkit | `/usr/share/polkit-1/actions/org.exactclone.policy` |
-| voce di menu | `/usr/share/applications/exactclone.desktop` |
-
-Dipendenza a runtime: `libwebkit2gtk-4.1-0`.
+Per disinstallare:
+```sh
+sudo sh build/linux/install.sh --uninstall
+```
 
 #### Avvio come root (pkexec)
 
@@ -88,23 +48,6 @@ Se la finestra non si apre:
 1. avviare `exactclone-launch.sh` da terminale e leggere l'errore;
 2. verificare che `xhost` sia installato (pacchetto `x11-xserver-utils` / `xorg-xhost`);
 3. in alternativa avviare direttamente `sudo -E exactclone`.
-
-## Test di integrazione (dischi virtuali)
-
-Toccano dispositivi a blocchi: si eseguono solo su dischi virtuali creati dal test.
-
-**Linux** (root, loop device; servono `losetup`, `sfdisk`, `mkfs.ext4`, `mkfs.vfat`):
-
-```sh
-sudo go test -tags integration -count=1 -v ./internal/itest/
-```
-
-**Windows** (shell amministratore; crea e collega VHDX con `diskpart`):
-
-```powershell
-go test -tags integration -count=1 -v ./internal/itest/
-$env:EXACTCLONE_EXPECT_ELEVATED = "1"; go test -count=1 ./internal/privilege/
-```
 
 ## Immagini `.img.zst` senza ExactClone
 
