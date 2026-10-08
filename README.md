@@ -62,3 +62,7 @@ Un'immagine è uno stream zstd standard dell'intero disco; le informazioni di Ex
 - Linux: le partizioni montate automaticamente da origine e destinazione vengono smontate dopo la conferma; a fine copia il kernel rilegge la tabella delle partizioni.
 - Immagini: lo spazio libero della destinazione deve essere almeno pari alla dimensione del disco (la dimensione compressa non è nota in anticipo); su FAT32 sono ammessi solo dischi fino a 4 GiB. L'immagine non può essere salvata sul disco di origine né ripristinata su un disco che la contiene. Un'immagine interrotta viene cancellata; una danneggiata viene rifiutata durante il ripristino.
 - Il disco di sistema in uso non può essere né origine né destinazione.
+
+---
+
+![devices](https://i.ibb.co/jkzpKNp0/pc-due-unita-usb.jpg)
