@@ -3,3 +3,4 @@ node_modules
 frontend/dist
 implement*
 build/windows/installer/tmp
+.claude
