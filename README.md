@@ -18,7 +18,7 @@ Richiede privilegi di amministratore (Windows) o root (Linux).
 
 
 - [Linux](#linux)
-- [Immagini `.img.zst` senza ExactClone](#immagini-imgzst-senza-exactclone)
+- [Installare zstd](#installare-zstd)
 - [Note di comportamento](#note-di-comportamento)
 
 Modalità sicura per lo sviluppo: con `EXACTCLONE_DEV_SAFE=1` come destinazione sono ammessi solo dischi USB, VHD e loop (su Linux compaiono anche i loop device).
@@ -49,12 +49,63 @@ Se la finestra non si apre:
 2. verificare che `xhost` sia installato (pacchetto `x11-xserver-utils` / `xorg-xhost`);
 3. in alternativa avviare direttamente `sudo -E exactclone`.
 
-## Immagini `.img.zst` senza ExactClone
+## Installare zstd
 
-Un'immagine è uno stream zstd standard dell'intero disco; le informazioni di ExactClone (disco di origine, dimensione, SHA-256) stanno in frame che i decompressori standard ignorano. Decomprimendola si ottiene un `.img` grezzo, identico al disco:
+Le immagini `.img.zst` sono stream zstd standard: con lo strumento `zstd` si possono decomprimere anche senza ExactClone.
 
-- **Windows**: [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) — il 7-Zip ufficiale e il `tar.exe` di Windows 10 non supportano zstd.
-- **Linux**: `zstd -d disco.img.zst` (pacchetto `zstd`). Ripristino manuale su un disco: `zstd -dc disco.img.zst | sudo dd of=/dev/sdX bs=16M status=progress conv=fsync`.
+### Windows
+
+Da PowerShell o dal Prompt dei comandi, con **winget** (incluso in Windows 10/11):
+
+```powershell
+winget install Meta.Zstandard
+```
+
+In alternativa:
+
+- **Scoop**: `scoop install zstd`
+- **Chocolatey** (da amministratore): `choco install zstandard`
+- **Manuale**: scaricare lo zip `zstd-vX.Y.Z-win64.zip` dalle [release ufficiali](https://github.com/facebook/zstd/releases), estrarlo e aggiungere la cartella al `PATH`.
+
+Chiudere e riaprire il terminale, poi verificare:
+
+```powershell
+zstd --version
+```
+
+Per un'interfaccia grafica: [7-Zip-zstd](https://github.com/mcmilk/7-Zip-zstd/releases) (`winget install mcmilk.7zip-zstd`). Il 7-Zip ufficiale e il `tar.exe` di Windows non supportano zstd.
+
+### Linux
+
+```sh
+# Debian / Ubuntu / Mint
+sudo apt install zstd
+
+# Fedora / RHEL / Rocky / Alma
+sudo dnf install zstd
+
+# Arch / Manjaro
+sudo pacman -S zstd
+
+# openSUSE
+sudo zypper install zstd
+```
+
+Verifica:
+
+```sh
+zstd --version
+```
+
+### Uso
+
+```sh
+# Decomprimere in un .img grezzo, identico al disco
+zstd -d disco.img.zst
+
+# Linux: ripristino manuale su un disco (ATTENZIONE: sovrascrive /dev/sdX)
+zstd -dc disco.img.zst | sudo dd of=/dev/sdX bs=16M status=progress conv=fsync
+```
 
 ## Note di comportamento
 
