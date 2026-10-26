@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata for ExactClone, installed by the .deb and .rpm packages
+  in /usr/share/metainfo/ so that software centers (KDE Discover, GNOME
+  Software) show ExactClone as an application.
+
+  <releases> is added at build time by build/linux/metainfo-release.sh with
+  the version of the git tag: do not add it here.
+-->
+<component type="desktop-application">
+  <id>io.github.alexis_82.exactclone</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>ExactClone</name>
+  <summary>Bit-by-bit disk clones and disk images</summary>
+  <summary xml:lang="it">Clonazione bit a bit di dischi e immagini disco</summary>
+
+  <developer id="io.github.alexis_82">
+    <name>alexis-82</name>
+  </developer>
+
+  <description>
+    <p>ExactClone copies a whole disk bit by bit: onto another drive, or into a compressed .img.zst image that can later be restored onto a drive.</p>
+    <p xml:lang="it">ExactClone copia bit a bit un intero disco: su un'altra unità oppure in un'immagine compressa .img.zst, da ripristinare in seguito su un'unità.</p>
+    <p>Every operation can be verified with SHA-256. The images are standard zstd streams, readable even without ExactClone.</p>
+    <p xml:lang="it">Ogni operazione può essere verificata con SHA-256. Le immagini sono stream zstd standard, leggibili anche senza ExactClone.</p>
+  </description>
+
+  <!-- Discover only shows components that name their package: ExactClone is
+       not in the distribution's AppStream catalog, so the name must be here -->
+  <pkgname>exactclone</pkgname>
+
+  <launchable type="desktop-id">exactclone.desktop</launchable>
+  <icon type="stock">exactclone</icon>
+
+  <!-- Same as Categories= in exactclone.desktop -->
+  <categories>
+    <category>System</category>
+    <category>Utility</category>
+  </categories>
+
+  <url type="homepage">https://github.com/alexis-82/exactclone</url>
+  <url type="bugtracker">https://github.com/alexis-82/exactclone/issues</url>
+  <url type="vcs-browser">https://github.com/alexis-82/exactclone</url>
+
+  <provides>
+    <binary>exactclone</binary>
+  </provides>
+
+  <content_rating type="oars-1.1"/>
+</component>

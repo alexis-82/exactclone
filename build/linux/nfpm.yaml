@@ -1,0 +1,80 @@
+# Debian and Fedora packages for ExactClone, built with nfpm (https://nfpm.goreleaser.com).
+# From the project root, after the Linux build:
+#
+#   wails build -tags webkit2_41 -ldflags "-X main.version=v1.2.0"
+#   VERSION=1.2.0 ARCH=amd64 nfpm pkg --config build/linux/nfpm.yaml --packager deb --target build/bin/
+#   VERSION=1.2.0 ARCH=amd64 nfpm pkg --config build/linux/nfpm.yaml --packager rpm --target build/bin/
+#
+# Output (the names ExactClone's updater looks for):
+#   build/bin/exactclone_1.2.0_amd64.deb     sudo apt install ./exactclone_1.2.0_amd64.deb      Remove: sudo apt remove exactclone
+#   build/bin/exactclone-1.2.0-1.x86_64.rpm  sudo dnf install ./exactclone-1.2.0-1.x86_64.rpm   Remove: sudo dnf remove exactclone
+#
+# Same paths as build/linux/install.sh: the polkit policy names the helper
+# /usr/libexec/exactclone-root.
+
+name: exactclone
+version: ${VERSION}          # X.Y.Z, without the "v" of the tag
+arch: ${ARCH}                # amd64 | arm64
+platform: linux
+section: admin
+priority: optional
+maintainer: alexis-82 <alessioabrugiati@gmail.com>
+homepage: https://github.com/alexis-82/exactclone
+license: MIT
+description: |
+  Bit-by-bit disk clones and disk images.
+  Drive-to-drive cloning, compressed .img.zst images of a whole disk and
+  restore of an image onto a drive, with SHA-256 verification.
+
+# Built with -tags webkit2_41 (GTK 3 + WebKitGTK 4.1); started as root with
+# pkexec (polkit)
+depends:
+  - libgtk-3-0
+  - libwebkit2gtk-4.1-0
+  - pkexec | policykit-1
+# xhost lets root open its window on Wayland sessions (XWayland)
+recommends:
+  - x11-xserver-utils
+
+# Fedora names the same libraries differently (Fedora 40+: glibc of the
+# Ubuntu 24.04 build machine, webkit2gtk 4.1)
+overrides:
+  rpm:
+    depends:
+      - gtk3
+      - webkit2gtk4.1
+      - polkit
+    recommends:
+      - xhost
+
+contents:
+  - src: build/bin/exactclone
+    dst: /usr/bin/exactclone
+    file_info:
+      mode: 0755
+  - src: build/linux/exactclone-launch.sh
+    dst: /usr/bin/exactclone-launch
+    file_info:
+      mode: 0755
+  - src: build/linux/exactclone-root
+    dst: /usr/libexec/exactclone-root
+    file_info:
+      mode: 0755
+  - src: build/linux/org.exactclone.policy
+    dst: /usr/share/polkit-1/actions/org.exactclone.policy
+    file_info:
+      mode: 0644
+  - src: build/linux/exactclone.desktop
+    dst: /usr/share/applications/exactclone.desktop
+    file_info:
+      mode: 0644
+  # appicon.png is not square: only in pixmaps, not in the hicolor theme
+  - src: build/appicon.png
+    dst: /usr/share/pixmaps/exactclone.png
+    file_info:
+      mode: 0644
+  # AppStream metadata: ExactClone shown as an app in Discover / GNOME Software
+  - src: build/linux/io.github.alexis_82.exactclone.metainfo.xml
+    dst: /usr/share/metainfo/io.github.alexis_82.exactclone.metainfo.xml
+    file_info:
+      mode: 0644

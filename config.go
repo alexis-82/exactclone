@@ -9,7 +9,8 @@ import (
 // Config is persisted in <user config dir>/exactclone/config.json; settings
 // saved under the old name (diskclone) are read when it does not exist yet.
 type Config struct {
-	Language string `json:"language"` // "it" or "en"
+	Language     string `json:"language"`     // "it" or "en"
+	CheckUpdates bool   `json:"checkUpdates"` // look for a new release at startup
 }
 
 func configPath() (string, error) {
@@ -21,7 +22,8 @@ func configPath() (string, error) {
 }
 
 func loadConfig() Config {
-	cfg := Config{Language: "it"}
+	// Defaults; a file without a field (e.g. from 1.0.0) keeps them.
+	cfg := Config{Language: "it", CheckUpdates: true}
 	p, err := configPath()
 	if err != nil {
 		return cfg
@@ -61,5 +63,12 @@ func (a *App) SetLanguage(lang string) error {
 	}
 	cfg := loadConfig()
 	cfg.Language = lang
+	return saveConfig(cfg)
+}
+
+// SetCheckUpdates saves whether to look for updates at startup.
+func (a *App) SetCheckUpdates(on bool) error {
+	cfg := loadConfig()
+	cfg.CheckUpdates = on
 	return saveConfig(cfg)
 }

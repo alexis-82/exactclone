@@ -6,6 +6,10 @@ export function Cancel() {
   return window['go']['main']['App']['Cancel']();
 }
 
+export function CheckUpdate() {
+  return window['go']['main']['App']['CheckUpdate']();
+}
+
 export function DestinationInfo(arg1) {
   return window['go']['main']['App']['DestinationInfo'](arg1);
 }
@@ -16,6 +20,14 @@ export function GetAppInfo() {
 
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
+}
+
+export function GetVersion() {
+  return window['go']['main']['App']['GetVersion']();
+}
+
+export function InstallUpdate() {
+  return window['go']['main']['App']['InstallUpdate']();
 }
 
 export function IsDevSafe() {
@@ -40,6 +52,10 @@ export function PickSaveFile(arg1) {
 
 export function ReadImageInfo(arg1) {
   return window['go']['main']['App']['ReadImageInfo'](arg1);
+}
+
+export function SetCheckUpdates(arg1) {
+  return window['go']['main']['App']['SetCheckUpdates'](arg1);
 }
 
 export function SetLanguage(arg1) {

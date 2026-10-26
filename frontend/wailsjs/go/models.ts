@@ -155,6 +155,7 @@ export namespace main {
 	}
 	export class Config {
 	    language: string;
+	    checkUpdates: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -163,6 +164,31 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.language = source["language"];
+	        this.checkUpdates = source["checkUpdates"];
+	    }
+	}
+	export class UpdateInfo {
+	    current: string;
+	    latest: string;
+	    available: boolean;
+	    canInstall: boolean;
+	    noRelease: boolean;
+	    notes: string;
+	    pageUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.current = source["current"];
+	        this.latest = source["latest"];
+	        this.available = source["available"];
+	        this.canInstall = source["canInstall"];
+	        this.noRelease = source["noRelease"];
+	        this.notes = source["notes"];
+	        this.pageUrl = source["pageUrl"];
 	    }
 	}
 

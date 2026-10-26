@@ -1,0 +1,94 @@
+# CI di ExactClone: a ogni push su main e a ogni pull request verifica che
+# il codice compili e che i test passino. Non produce nulla da scaricare.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un nuovo push sullo stesso branch annulla la run precedente ancora in corso
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend (svelte-check + i18n)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run check:i18n
+
+  go:
+    name: Go (vet + test)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Wails su Linux compila con cgo contro GTK3 e WebKitGTK 4.1
+      - name: Dipendenze di sistema Wails
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      # main.go incorpora frontend/dist con //go:embed: senza build del
+      # frontend il pacchetto principale non compila
+      - name: Build frontend
+        working-directory: frontend
+        run: npm ci && npm run build
+
+      - run: go vet -tags webkit2_41 ./...
+      # I test non richiedono root: usano file al posto dei dischi
+      # (i test di integrazione su loop device hanno il tag "integration")
+      - run: go test -tags webkit2_41 ./...
+      # Il codice Windows (installer, registro, dischi) non si compila sul
+      # runner Linux: il vet incrociato lo controlla senza aspettare il tag
+      - name: Go vet (Windows)
+        run: GOOS=windows go vet ./...
+
+  # Voce di menu, policy polkit, metadati AppStream e script dei pacchetti
+  # Linux: errori qui bloccherebbero la release, meglio vederli a ogni push
+  linux-metadata:
+    name: Metadati Linux (desktop + polkit + AppStream)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Strumenti di convalida
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y appstream desktop-file-utils libxml2-utils
+      - run: desktop-file-validate build/linux/exactclone.desktop
+      - run: xmllint --noout build/linux/org.exactclone.policy
+      # Il file nel repo non ha <releases>: si convalida come sarà nei pacchetti
+      - name: Convalida AppStream
+        run: |
+          cp build/linux/io.github.alexis_82.exactclone.metainfo.xml "$RUNNER_TEMP/"
+          sh build/linux/metainfo-release.sh "$RUNNER_TEMP/io.github.alexis_82.exactclone.metainfo.xml" 0.0.0 "$(date -u +%F)"
+          appstreamcli validate --no-net "$RUNNER_TEMP/io.github.alexis_82.exactclone.metainfo.xml"
+      - name: Sintassi degli script
+        run: |
+          for f in build/linux/*.sh build/linux/exactclone-root build/release-notes.sh; do
+            sh -n "$f"
+          done

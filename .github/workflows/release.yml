@@ -1,0 +1,254 @@
+# Release di ExactClone: parte quando si pubblica un tag vX.Y.Z.
+#   test -> build Windows + build Linux (in parallelo) -> GitHub Release
+# Prima del tag CHANGELOG.md deve avere la sezione "## [X.Y.Z]": diventa
+# il testo della release e delle note mostrate dall'app nell'aggiornamento.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  # 1. Stessi controlli della CI: niente release se un test fallisce
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Note di rilascio nel CHANGELOG
+        run: sh build/release-notes.sh "${GITHUB_REF_NAME#v}"
+      - name: Dipendenze di sistema Wails
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Frontend (check, i18n, build)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run check
+          npm run check:i18n
+          npm run build
+      - run: go test -tags webkit2_41 ./...
+
+  # 2a. Windows: installer NSIS + eseguibile portable
+  build-windows:
+    name: Build Windows
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Installa Wails CLI e NSIS
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+          choco install nsis -y --no-progress
+      # Wails scrive productVersion di wails.json nelle proprietà dell'exe e
+      # nel manifest: si sostituisce solo quel valore, senza riformattare
+      - name: Versione in wails.json
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+          $json = Get-Content wails.json -Raw
+          $json = $json -replace '"productVersion":\s*"[^"]*"', "`"productVersion`": `"$ver`""
+          [IO.File]::WriteAllText("$PWD\wails.json", $json)
+          if ((Get-Content wails.json -Raw | ConvertFrom-Json).info.productVersion -ne $ver) {
+            throw "productVersion non aggiornato in wails.json"
+          }
+      - name: Build
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"          # es. v1.2.0
+          $ver = $tag.TrimStart("v")               # es. 1.2.0
+          wails build -ldflags "-X main.version=$tag"
+          & "C:\Program Files (x86)\NSIS\makensis.exe" /DVERSION=$ver build\windows\installer\exactclone.nsi
+          if ($LASTEXITCODE -ne 0) { throw "makensis non riuscito" }
+          Copy-Item build\bin\exactclone.exe "build\bin\exactclone-$ver-amd64-portable.exe"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: |
+            build/bin/*-installer.exe
+            build/bin/*-portable.exe
+          if-no-files-found: error
+
+  # 2b. Linux: tar.gz (install.sh / exactclone-update), .deb e .rpm
+  build-linux:
+    name: Build Linux
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Dipendenze di sistema Wails
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Installa Wails CLI e nfpm
+        # nfpm richiede un Go più recente di go.mod: lo scarica solo per questi strumenti
+        env:
+          GOTOOLCHAIN: auto
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
+      # Versione del tag nei metadati AppStream (il file nel repo non ne ha),
+      # poi convalida: metadati non validi = niente release
+      - name: Metadati AppStream
+        run: |
+          sudo apt-get install -y appstream desktop-file-utils
+          sh build/linux/metainfo-release.sh build/linux/io.github.alexis_82.exactclone.metainfo.xml "${GITHUB_REF_NAME#v}" "$(date -u +%F)"
+          desktop-file-validate build/linux/exactclone.desktop
+          appstreamcli validate --no-net build/linux/io.github.alexis_82.exactclone.metainfo.xml
+      - name: Build + pacchetti (.tar.gz, .deb e .rpm)
+        run: |
+          wails build -tags webkit2_41 -ldflags "-X main.version=${{ github.ref_name }}"
+          sh build/linux/package.sh
+          VERSION="${GITHUB_REF_NAME#v}" ARCH=amd64 nfpm pkg --config build/linux/nfpm.yaml --packager deb --target build/bin/
+          dpkg-deb --info build/bin/exactclone_*_amd64.deb
+          dpkg-deb --contents build/bin/exactclone_*_amd64.deb
+          VERSION="${GITHUB_REF_NAME#v}" ARCH=amd64 nfpm pkg --config build/linux/nfpm.yaml --packager rpm --target build/bin/
+      # Installa davvero l'.rpm: Fedora 40 è il minimo (glibc della build
+      # Ubuntu 24.04), l'ultima Fedora usa dnf5. Niente release se fallisce.
+      - name: Verifica .rpm su Fedora
+        run: |
+          for img in fedora:40 fedora:latest; do
+            echo "::group::$img"
+            docker run --rm -e VERSION="${GITHUB_REF_NAME#v}" -v "$PWD/build/bin:/pkg:ro" "$img" sh -euc '
+              rpm -qpi /pkg/exactclone-*.rpm
+              rpm -qpR /pkg/exactclone-*.rpm
+              rpm -qpl /pkg/exactclone-*.rpm
+              rpm -qpi /pkg/exactclone-*.rpm | grep -Eq "^License +: MIT$"
+              if rpm -qpR /pkg/exactclone-*.rpm | grep -E "libgtk-3-0|libwebkit2gtk-4.1-0|policykit-1"; then
+                echo "dipendenze Debian nel pacchetto rpm" >&2; exit 1
+              fi
+              dnf install -y /pkg/exactclone-*.rpm
+              test "$(rpm -qf --qf "%{NAME}" /usr/bin/exactclone)" = exactclone
+              if ldd /usr/bin/exactclone 2>&1 | grep "not found"; then
+                echo "librerie mancanti per /usr/bin/exactclone" >&2; exit 1
+              fi
+              # Avvio come root: launcher, helper e policy con il percorso giusto
+              command -v pkexec
+              test -x /usr/bin/exactclone-launch
+              test -x /usr/libexec/exactclone-root
+              grep -q ">/usr/libexec/exactclone-root<" /usr/share/polkit-1/actions/org.exactclone.policy
+              # AppStream: quello che legge Discover (nome, sviluppatore, pacchetto)
+              M=/usr/share/metainfo/io.github.alexis_82.exactclone.metainfo.xml
+              grep -q "<release version=\"$VERSION\"" "$M"
+              dnf install -y appstream
+              appstreamcli refresh-cache --force
+              appstreamcli get io.github.alexis_82.exactclone --details | tee /tmp/appstream.txt
+              grep -Eiq "^ *name: *exactclone$" /tmp/appstream.txt
+              grep -Eiq "^ *developer[^:]*: *alexis-82$" /tmp/appstream.txt
+              grep -Eiq "^ *package[^:]*: *exactclone$" /tmp/appstream.txt
+            '
+            echo "::endgroup::"
+          done
+      # Installa il .deb su Ubuntu 24.04 e verifica che install.sh si rifiuti
+      # di sovrascrivere i file del pacchetto.
+      - name: Verifica .deb su Ubuntu
+        run: |
+          docker run --rm -v "$PWD/build/bin:/pkg:ro" ubuntu:24.04 sh -euc '
+            apt-get update
+            apt-get install -y /pkg/exactclone_*_amd64.deb
+            dpkg-query -S /usr/bin/exactclone | grep -q "^exactclone: "
+            if ldd /usr/bin/exactclone 2>&1 | grep "not found"; then
+              echo "librerie mancanti per /usr/bin/exactclone" >&2; exit 1
+            fi
+            command -v pkexec
+            test -x /usr/bin/exactclone-launch
+            test -x /usr/libexec/exactclone-root
+            grep -q ">/usr/libexec/exactclone-root<" /usr/share/polkit-1/actions/org.exactclone.policy
+            sum=$(sha256sum /usr/bin/exactclone)
+            mkdir /tmp/tar && tar -xzf /pkg/exactclone-linux-amd64.tar.gz -C /tmp/tar && cd /tmp/tar
+            if sh build/linux/install.sh; then
+              echo "install.sh ha sovrascritto il pacchetto" >&2; exit 1
+            fi
+            test "$(sha256sum /usr/bin/exactclone)" = "$sum"
+          '
+      # install.sh dal tar.gz: migrazione da un'installazione 1.0.0 in
+      # /usr/local, reinstallazione e disinstallazione
+      - name: Verifica install.sh su Ubuntu
+        run: |
+          docker run --rm -v "$PWD/build/bin:/pkg:ro" ubuntu:24.04 sh -euc '
+            mkdir -p /usr/local/libexec /usr/share/polkit-1/actions /usr/share/applications /usr/share/pixmaps
+            touch /usr/local/bin/exactclone /usr/local/bin/exactclone-launch.sh /usr/local/libexec/exactclone-root
+            mkdir /tmp/tar && tar -xzf /pkg/exactclone-linux-amd64.tar.gz -C /tmp/tar && cd /tmp/tar
+            sh build/linux/install.sh
+            sh build/linux/install.sh
+            for f in /usr/local/bin/exactclone /usr/local/bin/exactclone-launch.sh /usr/local/libexec/exactclone-root; do
+              if [ -e "$f" ]; then echo "residuo 1.0.0: $f" >&2; exit 1; fi
+            done
+            for f in /usr/bin/exactclone /usr/bin/exactclone-launch /usr/bin/exactclone-update /usr/libexec/exactclone-root; do
+              test -x "$f"
+            done
+            test -f /usr/share/polkit-1/actions/org.exactclone.policy
+            test -f /usr/share/applications/exactclone.desktop
+            sh build/linux/install.sh --uninstall
+            for f in /usr/bin/exactclone /usr/bin/exactclone-launch /usr/bin/exactclone-update /usr/libexec/exactclone-root \
+                /usr/share/polkit-1/actions/org.exactclone.policy /usr/share/applications/exactclone.desktop /usr/share/pixmaps/exactclone.png; do
+              if [ -e "$f" ]; then echo "non rimosso: $f" >&2; exit 1; fi
+            done
+          '
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux
+          path: |
+            build/bin/exactclone-linux-*.tar.gz
+            build/bin/exactclone_*.deb
+            build/bin/exactclone-*.rpm
+          if-no-files-found: error
+
+  # 3. Raccoglie i file, calcola i checksum e pubblica la release
+  release:
+    name: GitHub Release
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write  # serve per creare la release
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksum SHA-256
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS.txt
+      # Note = sezione della versione in CHANGELOG.md. ExactClone le mostra
+      # all'utente nella finestra di aggiornamento.
+      - name: Note di rilascio
+        run: |
+          sh build/release-notes.sh "${GITHUB_REF_NAME#v}" > notes.md
+          cat notes.md
+      - name: Crea la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "ExactClone $GITHUB_REF_NAME" \
+            --notes-file notes.md \
+            --verify-tag

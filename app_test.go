@@ -60,6 +60,24 @@ func TestAppInfo(t *testing.T) {
 	}
 }
 
+// A config.json from 1.0.0 has no checkUpdates: the check stays on.
+func TestConfigCheckUpdates(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("APPDATA", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	os.MkdirAll(filepath.Join(dir, "exactclone"), 0o755)
+	os.WriteFile(filepath.Join(dir, "exactclone", "config.json"), []byte(`{"language":"en"}`), 0o644)
+	if cfg := loadConfig(); !cfg.CheckUpdates || cfg.Language != "en" {
+		t.Fatalf("1.0.0 config: %+v", cfg)
+	}
+	if err := (&App{}).SetCheckUpdates(false); err != nil {
+		t.Fatal(err)
+	}
+	if cfg := loadConfig(); cfg.CheckUpdates || cfg.Language != "en" {
+		t.Fatalf("after SetCheckUpdates(false): %+v", cfg)
+	}
+}
+
 // Settings saved before the rename (config dir "diskclone") are still read.
 func TestConfigMigratesFromOldName(t *testing.T) {
 	dir := t.TempDir()
@@ -81,5 +99,17 @@ func TestConfigMigratesFromOldName(t *testing.T) {
 	}
 	if got := loadConfig().Language; got != "it" {
 		t.Fatalf("new setting must win over the old one: %q", got)
+	}
+}
+
+// The version shown in the Info tab is the one set by the build
+// (-ldflags "-X main.version=<tag>"), not productVersion in wails.json.
+func TestAppInfoVersionFromBuild(t *testing.T) {
+	withVersion(t, "v9.8.7")
+	if got := appInfo().Version; got != "v9.8.7" {
+		t.Fatalf("version %q, want the build version v9.8.7", got)
+	}
+	if got := (&App{}).GetVersion(); got != "v9.8.7" {
+		t.Fatalf("GetVersion %q", got)
 	}
 }

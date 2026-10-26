@@ -29,17 +29,20 @@ func coded(code string, err error) error {
 
 // App holds the methods bound to the frontend.
 type App struct {
-	ctx  context.Context
-	jobs *job.Manager
+	ctx     context.Context
+	emit    func(name string, data any)
+	jobs    *job.Manager
+	updates updater
 }
 
 func NewApp() *App {
-	return &App{}
+	return &App{updates: newUpdater(runtime.Quit)}
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	a.jobs = job.NewManager(func(name string, data any) { runtime.EventsEmit(ctx, name, data) })
+	a.emit = func(name string, data any) { runtime.EventsEmit(ctx, name, data) }
+	a.jobs = job.NewManager(a.emit)
 }
 
 func devSafe() bool { return disk.DevSafe() }
@@ -102,7 +105,14 @@ func (a *App) StartClone(srcID, dstID string, verify bool) error {
 	})
 }
 
+// start runs a disk job, unless an update is being installed (InstallUpdate
+// holds the same lock while it checks that no job runs).
 func (a *App) start(kind string, fn job.Func) error {
+	a.updates.mu.Lock()
+	defer a.updates.mu.Unlock()
+	if a.updates.busy {
+		return coded("busy", nil)
+	}
 	if err := a.jobs.Start(kind, fn); err != nil {
 		return coded("busy", nil)
 	}

@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { t, lang, type Lang } from './i18n/i18n'
-  import { Cancel, GetConfig, IsDevSafe, IsElevated, SetLanguage } from '../wailsjs/go/main/App'
+  import { Cancel, GetConfig, GetVersion, IsDevSafe, IsElevated, SetLanguage } from '../wailsjs/go/main/App'
   import { EventsOn } from '../wailsjs/runtime/runtime'
   import BackupTab from './lib/BackupTab.svelte'
   import RestoreTab from './lib/RestoreTab.svelte'
   import InfoTab from './lib/InfoTab.svelte'
   import ProgressPanel from './lib/ProgressPanel.svelte'
+  import UpdateDialog from './lib/UpdateDialog.svelte'
+  import { checkUpdatesInBackground, updateProgress } from './lib/update'
   import { idleJob, job, type JobState, type Snapshot } from './lib/job'
 
   let tab = $state<'backup' | 'restore' | 'info'>('backup')
@@ -52,15 +54,18 @@
         }))
       },
     )
-    Promise.all([GetConfig(), IsElevated(), IsDevSafe()]).then(([cfg, el, ds]) => {
+    const offUpdate = EventsOn('update:progress', (e: { done: number; total: number }) => updateProgress.set(e))
+    Promise.all([GetConfig(), IsElevated(), IsDevSafe(), GetVersion()]).then(([cfg, el, ds, version]) => {
       lang.set(cfg.language === 'en' ? 'en' : 'it')
       elevated = el
       devSafe = ds
       ready = true
+      if (cfg.checkUpdates && version !== 'dev') checkUpdatesInBackground()
     })
     return () => {
       offProgress()
       offDone()
+      offUpdate()
     }
   })
 </script>
@@ -106,3 +111,5 @@
 {#if $job.status !== 'idle'}
   <ProgressPanel job={$job} oncancel={cancelJob} onclose={() => job.set(idleJob)} />
 {/if}
+
+<UpdateDialog />

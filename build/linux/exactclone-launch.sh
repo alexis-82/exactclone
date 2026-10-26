@@ -12,7 +12,7 @@ if [ -n "$WAYLAND_DISPLAY" ] && [ "${EXACTCLONE_WAYLAND:-0}" != "1" ]; then
 fi
 
 # DISKCLONE_DEV_SAFE is the variable name used before the rename.
-exec pkexec /usr/local/libexec/exactclone-root \
+exec pkexec /usr/libexec/exactclone-root \
     "$DISPLAY" "${XAUTHORITY:-$HOME/.Xauthority}" "$WAYLAND_DISPLAY" \
     "$XDG_RUNTIME_DIR" "${GDK_BACKEND:-}" "${LANG:-C.UTF-8}" \
     "${EXACTCLONE_DEV_SAFE:-${DISKCLONE_DEV_SAFE:-}}"

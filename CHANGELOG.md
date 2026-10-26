@@ -2,6 +2,26 @@
 
 Tutte le modifiche rilevanti a ExactClone sono documentate in questo file.
 
+## [1.1.0] - 2026-10-26
+
+> ExactClone 1.0.0 cannot update itself: install 1.1.0 manually once (installer, .deb/.rpm or .tar.gz). Later versions are offered by the app.
+
+### Added
+
+- Automatic updates: at startup (can be turned off) and from the Info tab, ExactClone checks GitHub for a new version, shows what's new and, after confirmation, downloads and installs it. The download is verified (size and SHA-256), and no update starts while a disk operation is running.
+- Windows installer for all users (Program Files) with Start menu and desktop shortcuts and an uninstaller. The portable executable is still available; it does not update itself (the app opens the release page).
+- Linux packages: .deb (Debian/Ubuntu) and .rpm (Fedora 40+), besides the .tar.gz for install.sh; shown in software centers.
+
+### Changed
+
+- Linux: ExactClone is installed in /usr/bin and /usr/libexec instead of /usr/local, and the launcher is now `exactclone-launch`. install.sh removes a previous /usr/local installation and refuses to run when the .deb/.rpm package is installed.
+- Slightly taller main window.
+
+### Fixed
+
+- Linux: wrong character in the Italian text of the password prompt.
+- Windows: product version missing from the executable's numeric version fields.
+
 ## [1.0.0] - 2026-10-03
 
 Primo rilascio.

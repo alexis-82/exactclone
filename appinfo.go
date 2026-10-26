@@ -9,8 +9,9 @@ import (
 	"exactclone/internal/privilege"
 )
 
-// wails.json is the single source of the product name and version (Wails
-// also writes them into the Windows executable properties).
+// wails.json is the source of the product name and author (Wails also writes
+// them into the Windows executable properties); the version comes from the
+// build (main.version), the release workflow copies it into wails.json.
 //
 //go:embed wails.json
 var wailsJSON []byte
@@ -35,14 +36,13 @@ func appInfo() AppInfo {
 			Name string `json:"name"`
 		} `json:"author"`
 		Info struct {
-			ProductName    string `json:"productName"`
-			ProductVersion string `json:"productVersion"`
+			ProductName string `json:"productName"`
 		} `json:"info"`
 	}
 	json.Unmarshal(wailsJSON, &cfg)
 	info := AppInfo{
 		Name:      cfg.Info.ProductName,
-		Version:   cfg.Info.ProductVersion,
+		Version:   version,
 		Author:    cfg.Author.Name,
 		OS:        runtime.GOOS,
 		Arch:      runtime.GOARCH,
