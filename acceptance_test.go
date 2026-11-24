@@ -169,6 +169,62 @@ func TestCA1CloneJob(t *testing.T) {
 	wantNotices(t, done.Notices, NoticeCloneOffline)
 }
 
+// A GPT disk cloned onto a larger one gets its backup GPT moved to the end
+// (as `sgdisk -e`): no notice, and the partitions are unchanged.
+func TestCloneGPTOntoLargerDisk(t *testing.T) {
+	if _, err := exec.LookPath("sgdisk"); err != nil {
+		t.Skip("sgdisk not installed")
+	}
+	useFileDevices(t)
+	src, _ := fakeDisk(t, "src", 0, 32<<20)
+	if out, err := exec.Command("sgdisk", "-n", "1:0:+8M", "-n", "2:0:0", src.Path).CombinedOutput(); err != nil {
+		t.Fatalf("sgdisk: %v\n%s", err, out)
+	}
+	data, _ := os.ReadFile(src.Path)
+	dst, _ := fakeDisk(t, "dst", 0, 64<<20)
+	done := runJob(t, &events{}, "clone", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runClone(ctx, r, src, dst, true)
+	})
+	if done.Status != job.StatusDone {
+		t.Fatalf("job = %+v", done)
+	}
+	wantNotices(t, done.Notices, NoticeCloneOffline)
+	out, _ := exec.Command("sgdisk", "-v", dst.Path).CombinedOutput()
+	if !strings.Contains(string(out), "No problems found") {
+		t.Fatalf("sgdisk -v:\n%s", out)
+	}
+	// Partition data (after MBR and primary GPT) copied as is.
+	const head = 34 * 512
+	if !bytes.Equal(readHead(t, dst.Path, len(data)-33*512)[head:], data[head:len(data)-33*512]) {
+		t.Fatal("partition data differs from source")
+	}
+}
+
+// A GPT signature with a broken table cannot be fixed: the copy succeeds and
+// the user is told to fix the backup GPT by hand.
+func TestCloneDamagedGPTKeepsNotice(t *testing.T) {
+	useFileDevices(t)
+	src, data := fakeDisk(t, "src", 0, 8<<20)
+	copy(data[512:], "EFI PART") // signature, no valid header
+	if err := os.WriteFile(src.Path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	dst, _ := fakeDisk(t, "dst", 0, 16<<20)
+	done := runJob(t, &events{}, "clone", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runClone(ctx, r, src, dst, true)
+	})
+	if done.Status != job.StatusDone {
+		t.Fatalf("job = %+v", done)
+	}
+	want := []string{NoticeGPTBackupHeader}
+	if goruntime.GOOS == "windows" {
+		want = []string{NoticeCloneOffline, NoticeGPTBackupHeader}
+	}
+	if fmt.Sprint(done.Notices) != fmt.Sprint(want) {
+		t.Fatalf("notices = %v, want %v", done.Notices, want)
+	}
+}
+
 // CA3: disk -> image -> another disk gives the same bytes; the image keeps
 // size and source disk.
 func TestCA3ImageAndRestore(t *testing.T) {

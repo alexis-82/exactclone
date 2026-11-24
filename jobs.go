@@ -11,6 +11,7 @@ import (
 
 	"exactclone/internal/clone"
 	"exactclone/internal/disk"
+	"exactclone/internal/gpt"
 	"exactclone/internal/image"
 	"exactclone/internal/job"
 	"exactclone/internal/rawdev"
@@ -47,20 +48,18 @@ func runClone(ctx context.Context, r *job.Reporter, src, dst disk.Disk, verify b
 		return res, coded("prepare_failed", err)
 	}
 	defer release()
-	var gpt bool
-	var size int64
+	var gptMisplaced bool
 	// From here on the destination may be offline (Windows), even if the
 	// copy fails or is canceled: always tell the user.
 	defer func() {
-		res.Notices = cloneNotices(goruntime.GOOS, err, gpt, dst.SizeBytes > size)
+		res.Notices = cloneNotices(goruntime.GOOS, err, gptMisplaced)
 	}()
 	s, err := openDevice(src.Path, false)
 	if err != nil {
 		return res, coded("open_failed", err)
 	}
 	defer s.Close()
-	size = s.Size()
-	gpt, err = writeToDisk(ctx, r, s, dst, size, verify, nil)
+	gptMisplaced, err = writeToDisk(ctx, r, s, dst, s.Size(), verify, nil)
 	return res, err
 }
 
@@ -111,20 +110,20 @@ func runRestoreImage(ctx context.Context, r *job.Reporter, imagePath string, dst
 		return res, coded("prepare_failed", err)
 	}
 	defer release()
-	var gpt bool
-	size := img.Size()
+	var gptMisplaced bool
 	defer func() {
-		res.Notices = cloneNotices(goruntime.GOOS, err, gpt, dst.SizeBytes > size)
+		res.Notices = cloneNotices(goruntime.GOOS, err, gptMisplaced)
 	}()
-	gpt, err = writeToDisk(ctx, r, img, dst, size, verify, img.Check)
+	gptMisplaced, err = writeToDisk(ctx, r, img, dst, img.Size(), verify, img.Check)
 	return res, err
 }
 
 // writeToDisk copies size bytes of src onto the prepared disk dst, writing the
 // partition table last. check (optional) validates the SHA-256 of the data
-// read before the optional verification pass. It reports whether the written
-// disk is GPT.
-func writeToDisk(ctx context.Context, r *job.Reporter, src io.ReaderAt, dst disk.Disk, size int64, verify bool, check func(sum []byte) error) (gpt bool, err error) {
+// read before the optional verification pass. On a larger destination the
+// backup GPT is moved to the end of the disk; it reports whether that was
+// needed and failed (the copy itself is still good).
+func writeToDisk(ctx context.Context, r *job.Reporter, src io.ReaderAt, dst disk.Disk, size int64, verify bool, check func(sum []byte) error) (gptMisplaced bool, err error) {
 	d, err := openDevice(dst.Path, true)
 	if err != nil {
 		return false, coded("open_failed", err)
@@ -151,25 +150,32 @@ func writeToDisk(ctx context.Context, r *job.Reporter, src io.ReaderAt, dst disk
 			return false, coded("image_corrupt", err)
 		}
 	}
-	gpt = isGPT(d)
 	if verify {
 		r.Phase("verify", size)
 		if err := clone.Verify(ctx, d, size, sum, r.Add); err != nil {
 			if errors.Is(err, clone.ErrVerifyMismatch) {
-				return gpt, coded("verify_mismatch", nil)
+				return false, coded("verify_mismatch", nil)
 			}
-			return gpt, coded("verify_failed", err)
+			return false, coded("verify_failed", err)
+		}
+	}
+	// After the verification, which compares the copied bytes: this rewrites
+	// the primary GPT header. isGPT is looser than MoveBackup, so a damaged
+	// GPT that cannot be fixed still gets the notice.
+	if d.Size() > size && isGPT(d) {
+		if _, err := gpt.MoveBackup(d, d.Size()); err != nil {
+			gptMisplaced = true
 		}
 	}
 	err = d.Close()
 	d = nil
 	if err != nil {
-		return gpt, coded("copy_failed", err)
+		return gptMisplaced, coded("copy_failed", err)
 	}
 	if err := finishWrite(dst); err != nil {
-		return gpt, coded("finish_failed", err)
+		return gptMisplaced, coded("finish_failed", err)
 	}
-	return gpt, nil
+	return gptMisplaced, nil
 }
 
 // imageError maps image format errors to frontend codes.
@@ -188,7 +194,7 @@ func imageError(err error) error {
 
 // cloneNotices returns the messages shown at the end of a write to a disk
 // that got past PrepareForWrite.
-func cloneNotices(goos string, err error, gpt, destLarger bool) []string {
+func cloneNotices(goos string, err error, gptMisplaced bool) []string {
 	var notices []string
 	if goos == "windows" {
 		if err == nil {
@@ -197,7 +203,7 @@ func cloneNotices(goos string, err error, gpt, destLarger bool) []string {
 			notices = append(notices, NoticeDestOffline)
 		}
 	}
-	if err == nil && gpt && destLarger {
+	if err == nil && gptMisplaced {
 		notices = append(notices, NoticeGPTBackupHeader)
 	}
 	return notices

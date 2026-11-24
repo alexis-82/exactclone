@@ -103,7 +103,7 @@
 
   "notices.clone_offline": "Il disco scritto è offline: scollegalo prima di riavviare e non portarlo online su questo PC (Windows ne cambierebbe la firma e il disco non si avvierebbe più).",
   "notices.dest_offline": "Il disco di destinazione è stato messo offline per la copia e lo è ancora: scollegalo e ricollegalo (oppure portalo online da Gestione disco) prima di riutilizzarlo.",
-  "notices.gpt_backup_header": "La destinazione è più grande dell'origine: la copia di riserva della tabella GPT non si trova alla fine del disco. Alcuni strumenti la segnaleranno come danneggiata; si ripara con gdisk o con Gestione disco.",
+  "notices.gpt_backup_header": "La destinazione è più grande dell'origine e non è stato possibile spostare la copia di riserva della tabella GPT alla fine del disco. Alcuni strumenti la segnaleranno come danneggiata; si ripara con gdisk (sgdisk -e) o con Gestione disco.",
 
   "errors.same_disk": "Origine e destinazione sono lo stesso disco.",
   "errors.source_system": "Il disco di sistema in uso non può essere copiato.",

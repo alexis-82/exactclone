@@ -103,7 +103,7 @@
 
   "notices.clone_offline": "The written disk is offline: disconnect it before rebooting and do not bring it online on this PC (Windows would change its signature and the disk would no longer boot).",
   "notices.dest_offline": "The destination disk was taken offline for the copy and still is: disconnect and reconnect it (or bring it online in Disk Management) before using it again.",
-  "notices.gpt_backup_header": "The destination is larger than the source: the backup GPT table is not at the end of the disk. Some tools will report it as damaged; fix it with gdisk or Disk Management.",
+  "notices.gpt_backup_header": "The destination is larger than the source and the backup GPT table could not be moved to the end of the disk. Some tools will report it as damaged; fix it with gdisk (sgdisk -e) or Disk Management.",
 
   "errors.same_disk": "Source and destination are the same disk.",
   "errors.source_system": "The system disk in use cannot be copied.",

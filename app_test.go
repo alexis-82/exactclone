@@ -12,21 +12,21 @@ import (
 func TestCloneNotices(t *testing.T) {
 	failed := coded("copy_failed", errors.New("operation canceled"))
 	cases := []struct {
-		name       string
-		goos       string
-		err        error
-		gpt, large bool
-		want       []string
+		name         string
+		goos         string
+		err          error
+		gptMisplaced bool
+		want         []string
 	}{
-		{"windows ok", "windows", nil, false, false, []string{NoticeCloneOffline}},
-		{"windows canceled", "windows", failed, true, true, []string{NoticeDestOffline}},
-		{"windows ok gpt larger", "windows", nil, true, true, []string{NoticeCloneOffline, NoticeGPTBackupHeader}},
-		{"linux ok", "linux", nil, false, false, nil},
-		{"linux gpt larger", "linux", nil, true, true, []string{NoticeGPTBackupHeader}},
-		{"linux failed", "linux", failed, true, true, nil},
+		{"windows ok", "windows", nil, false, []string{NoticeCloneOffline}},
+		{"windows canceled", "windows", failed, true, []string{NoticeDestOffline}},
+		{"windows ok gpt misplaced", "windows", nil, true, []string{NoticeCloneOffline, NoticeGPTBackupHeader}},
+		{"linux ok", "linux", nil, false, nil},
+		{"linux gpt misplaced", "linux", nil, true, []string{NoticeGPTBackupHeader}},
+		{"linux failed", "linux", failed, true, nil},
 	}
 	for _, c := range cases {
-		got := cloneNotices(c.goos, c.err, c.gpt, c.large)
+		got := cloneNotices(c.goos, c.err, c.gptMisplaced)
 		if len(got) != len(c.want) {
 			t.Errorf("%s: %v, want %v", c.name, got, c.want)
 			continue
