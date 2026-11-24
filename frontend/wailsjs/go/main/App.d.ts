@@ -3,6 +3,7 @@
 import {main} from '../models';
 import {mount} from '../models';
 import {disk} from '../models';
+import {format} from '../models';
 import {image} from '../models';
 
 export function Cancel():Promise<void>;
@@ -25,6 +26,8 @@ export function IsElevated():Promise<boolean>;
 
 export function ListDisks():Promise<Array<disk.Disk>>;
 
+export function ListFileSystems():Promise<Array<format.FS>>;
+
 export function PickImage():Promise<string>;
 
 export function PickSaveFile(arg1:string):Promise<string>;
@@ -36,6 +39,8 @@ export function SetCheckUpdates(arg1:boolean):Promise<void>;
 export function SetLanguage(arg1:string):Promise<void>;
 
 export function StartClone(arg1:string,arg2:string,arg3:boolean):Promise<void>;
+
+export function StartFormat(arg1:string,arg2:string,arg3:string,arg4:string,arg5:boolean):Promise<void>;
 
 export function StartImage(arg1:string,arg2:string,arg3:boolean):Promise<void>;
 

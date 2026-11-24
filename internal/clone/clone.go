@@ -250,3 +250,27 @@ func Verify(ctx context.Context, dst Verifiable, size int64, expected []byte, on
 	}
 	return nil
 }
+
+// Zero writes zeros over the first size bytes of dst (size must be a multiple
+// of the sector size, as every disk size is). onProgress (optional) receives
+// the number of bytes written.
+func Zero(ctx context.Context, dst io.WriterAt, size int64, onProgress func(int64)) error {
+	buf := AlignedBuf(DefaultBlockSize)
+	for off := int64(0); off < size; {
+		if ctx.Err() != nil {
+			return ErrCanceled
+		}
+		n := int64(len(buf))
+		if rem := size - off; n > rem {
+			n = rem
+		}
+		if _, err := dst.WriteAt(buf[:n], off); err != nil {
+			return fmt.Errorf("write at offset %d: %w", off, err)
+		}
+		off += n
+		if onProgress != nil {
+			onProgress(n)
+		}
+	}
+	return nil
+}

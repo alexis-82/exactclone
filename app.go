@@ -11,6 +11,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"exactclone/internal/disk"
+	"exactclone/internal/format"
 	"exactclone/internal/image"
 	"exactclone/internal/job"
 	"exactclone/internal/mount"
@@ -177,6 +178,33 @@ func (a *App) StartRestoreImage(imagePath, dstID string, verify bool) error {
 	}
 	return a.start("restore", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
 		return runRestoreImage(ctx, r, imagePath, dst, verify)
+	})
+}
+
+// ListFileSystems returns the file systems this OS can format, with the
+// availability of their tools.
+func (a *App) ListFileSystems() []format.FS { return format.List() }
+
+// StartFormat erases disk dstID and creates a scheme ("mbr"/"gpt") partition
+// table with one partition formatted as fsID. full first writes zeros over
+// the whole disk.
+func (a *App) StartFormat(dstID, fsID, scheme, label string, full bool) error {
+	if !privilege.IsElevated() {
+		return coded(validate.CodeNotElevated, nil)
+	}
+	dst, err := findDisk(dstID)
+	if err != nil {
+		return err
+	}
+	fs, ok := format.Find(fsID)
+	if !ok {
+		return coded(validate.CodeFSUnavailable, errors.New(fsID))
+	}
+	if err := validate.Format(dst, fs, scheme, label, devSafe()); err != nil {
+		return err
+	}
+	return a.start("format", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runFormat(ctx, r, dst, fsID, scheme, label, full)
 	})
 }
 

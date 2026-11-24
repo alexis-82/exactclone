@@ -75,6 +75,37 @@ export namespace disk {
 
 }
 
+export namespace format {
+	
+	export class FS {
+	    id: string;
+	    name: string;
+	    tool: string;
+	    available: boolean;
+	    minBytes: number;
+	    maxBytes: number;
+	    labelMax: number;
+	    labelBytes: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new FS(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.tool = source["tool"];
+	        this.available = source["available"];
+	        this.minBytes = source["minBytes"];
+	        this.maxBytes = source["maxBytes"];
+	        this.labelMax = source["labelMax"];
+	        this.labelBytes = source["labelBytes"];
+	    }
+	}
+
+}
+
 export namespace image {
 	
 	export class Info {

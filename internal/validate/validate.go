@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"exactclone/internal/disk"
+	"exactclone/internal/format"
 	"exactclone/internal/mount"
 )
 
@@ -21,6 +22,12 @@ const (
 	CodeInsufficientSpace = "insufficient_space"
 	CodeFAT32Limit        = "fat32_limit"
 	CodeNotElevated       = "not_elevated"
+	CodeFSUnavailable     = "fs_unavailable"
+	CodeFSTooSmall        = "fs_too_small"
+	CodeFSTooLarge        = "fs_too_large"
+	CodeMBRTooLarge       = "mbr_too_large"
+	CodeInvalidScheme     = "invalid_scheme"
+	CodeInvalidLabel      = "invalid_label"
 )
 
 // Error is a rule violation identified by a code.
@@ -82,6 +89,30 @@ func RestoreImage(imagePath string, imageSize int64, dst disk.Disk, devSafe bool
 		return fail(CodeDestTooSmall)
 	case devSafe && !devSafeBuses[dst.Bus]:
 		return fail(CodeDevSafe)
+	}
+	return nil
+}
+
+// Format checks formatting the whole disk dst with fs, a scheme partition
+// table and label.
+func Format(dst disk.Disk, fs format.FS, scheme, label string, devSafe bool) error {
+	switch {
+	case dst.IsSystem:
+		return fail(CodeDestSystem)
+	case devSafe && !devSafeBuses[dst.Bus]:
+		return fail(CodeDevSafe)
+	case !fs.Available:
+		return fail(CodeFSUnavailable)
+	case dst.SizeBytes < fs.MinBytes:
+		return fail(CodeFSTooSmall)
+	case fs.MaxBytes > 0 && dst.SizeBytes > fs.MaxBytes:
+		return fail(CodeFSTooLarge)
+	case scheme != format.SchemeMBR && scheme != format.SchemeGPT:
+		return fail(CodeInvalidScheme)
+	case scheme == format.SchemeMBR && dst.SizeBytes > format.MaxMBRBytes:
+		return fail(CodeMBRTooLarge)
+	case format.CheckLabel(fs.ID, label) != nil:
+		return fail(CodeInvalidLabel)
 	}
 	return nil
 }

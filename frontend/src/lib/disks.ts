@@ -26,3 +26,10 @@ export function destinationReason(t: T, d: disk.Disk, size: number, sourceId: st
   if (devSafe && !safeBuses.includes(d.bus)) return t('disk.reasonDevSafe')
   return ''
 }
+
+/** Why d cannot be formatted ('' if it can). Mirrors validate.Format. */
+export function formatReason(t: T, d: disk.Disk, devSafe: boolean): string {
+  if (d.isSystem) return t('disk.reasonSystem')
+  if (devSafe && !safeBuses.includes(d.bus)) return t('disk.reasonDevSafe')
+  return ''
+}

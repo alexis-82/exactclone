@@ -206,3 +206,27 @@ func TestAlignedBuf(t *testing.T) {
 		}
 	}
 }
+
+func TestZero(t *testing.T) {
+	size := int64(DefaultBlockSize + 4096)
+	f := makeFile(t, "zero", bytes.Repeat([]byte{0xAA}, int(size)+512))
+	var progress int64
+	if err := Zero(context.Background(), f, size, func(n int64) { progress += n }); err != nil {
+		t.Fatal(err)
+	}
+	if progress != size {
+		t.Fatalf("progress = %d, want %d", progress, size)
+	}
+	data, _ := os.ReadFile(f.Name())
+	if !bytes.Equal(data[:size], make([]byte, size)) {
+		t.Fatal("not zeroed")
+	}
+	if data[size] != 0xAA {
+		t.Fatal("wrote beyond size")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := Zero(ctx, f, size, nil); !errors.Is(err, ErrCanceled) {
+		t.Fatalf("canceled: err = %v", err)
+	}
+}

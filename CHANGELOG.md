@@ -2,6 +2,16 @@
 
 Tutte le modifiche rilevanti a ExactClone sono documentate in questo file.
 
+## [1.2.0] - 2026-11-24
+
+### Added
+
+- Format tab: erases a drive and creates a single partition with the chosen file system (Linux: ext4, ext3, ext2, XFS, Btrfs, F2FS, NTFS, exFAT, FAT32; Windows: NTFS, exFAT, FAT32 up to 32 GB, ReFS), MBR or GPT partition table and an optional volume label. Quick format, or full format that first writes zeros over the whole drive (with progress and cancel). File systems whose program is not installed are shown disabled.
+
+### Changed
+
+- Cloning or restoring onto a larger disk now moves the backup GPT table to the end of the disk automatically (like `sgdisk -e`); the notice appears only if this fails.
+
 ## [1.1.0] - 2026-10-26
 
 > ExactClone 1.0.0 cannot update itself: install 1.1.0 manually once (installer, .deb/.rpm or .tar.gz). Later versions are offered by the app.

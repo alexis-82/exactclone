@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"exactclone/internal/disk"
+	"exactclone/internal/format"
 	"exactclone/internal/mount"
 )
 
@@ -105,6 +106,39 @@ func TestRestoreImage(t *testing.T) {
 	for _, c := range cases {
 		if got := code(RestoreImage(c.path, c.size, c.dst, c.devSafe)); got != c.want {
 			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func TestFormat(t *testing.T) {
+	const gib = 1 << 30
+	usb := disk.Disk{ID: "b", SizeBytes: 64 * gib, Bus: "usb"}
+	// ntfs exists on Linux and Windows: CheckLabel uses the running OS table.
+	ntfs := format.FS{ID: "ntfs", Available: true, MinBytes: 8 << 20, LabelMax: 32}
+	fat := format.FS{ID: "fat32", Available: true, MinBytes: 64 << 20, MaxBytes: 32 * gib, LabelMax: 11}
+	cases := []struct {
+		name    string
+		dst     disk.Disk
+		fs      format.FS
+		scheme  string
+		label   string
+		devSafe bool
+		want    string
+	}{
+		{"ok", usb, ntfs, format.SchemeMBR, "Dati", false, ""},
+		{"system", disk.Disk{SizeBytes: 64 * gib, IsSystem: true}, ntfs, format.SchemeGPT, "", false, CodeDestSystem},
+		{"dev safe", disk.Disk{SizeBytes: 64 * gib, Bus: "sata"}, ntfs, format.SchemeGPT, "", true, CodeDevSafe},
+		{"tool missing", usb, format.FS{ID: "ntfs"}, format.SchemeGPT, "", false, CodeFSUnavailable},
+		{"too small", disk.Disk{SizeBytes: 1 << 20}, ntfs, format.SchemeGPT, "", false, CodeFSTooSmall},
+		{"fat32 too large", usb, fat, format.SchemeMBR, "", false, CodeFSTooLarge},
+		{"bad scheme", usb, ntfs, "apm", "", false, CodeInvalidScheme},
+		{"mbr over 2 TiB", disk.Disk{SizeBytes: 3 << 40}, ntfs, format.SchemeMBR, "", false, CodeMBRTooLarge},
+		{"gpt over 2 TiB", disk.Disk{SizeBytes: 3 << 40}, ntfs, format.SchemeGPT, "", false, ""},
+		{"bad label", usb, ntfs, format.SchemeGPT, `a"b`, false, CodeInvalidLabel},
+	}
+	for _, c := range cases {
+		if got := code(Format(c.dst, c.fs, c.scheme, c.label, c.devSafe)); got != c.want {
+			t.Errorf("%s: %q, want %q", c.name, got, c.want)
 		}
 	}
 }

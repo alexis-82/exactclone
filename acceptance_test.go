@@ -407,3 +407,89 @@ func TestCA8RefusedWithoutPrivileges(t *testing.T) {
 		t.Fatalf("StartRestoreImage err = %v, want not_elevated", err)
 	}
 }
+
+// stubFormat replaces the partitioning/mkfs step and records its calls.
+func stubFormat(t *testing.T, fail error) *[]string {
+	t.Helper()
+	calls := &[]string{}
+	o := formatDisk
+	formatDisk = func(ctx context.Context, d disk.Disk, fsID, scheme, label string) error {
+		*calls = append(*calls, fmt.Sprintf("%s %s %s %q", d.ID, fsID, scheme, label))
+		return fail
+	}
+	t.Cleanup(func() { formatDisk = o })
+	return calls
+}
+
+// Full format: the whole disk is zeroed (with progress), then formatted.
+func TestFormatFull(t *testing.T) {
+	useFileDevices(t)
+	calls := stubFormat(t, nil)
+	dst, _ := fakeDisk(t, "dst", 20<<20, 0)
+	ev := &events{}
+	done := runJob(t, ev, "format", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runFormat(ctx, r, dst, "ntfs", "gpt", "Dati", true)
+	})
+	if done.Status != job.StatusDone || len(done.Notices) != 0 {
+		t.Fatalf("job = %+v", done)
+	}
+	if fmt.Sprint(phases(ev)) != "[zero format]" {
+		t.Fatalf("phases = %v", phases(ev))
+	}
+	if data, _ := os.ReadFile(dst.Path); !bytes.Equal(data, make([]byte, len(data))) {
+		t.Fatal("disk not zeroed")
+	}
+	if fmt.Sprint(*calls) != `[dst ntfs gpt "Dati"]` {
+		t.Fatalf("format calls = %v", *calls)
+	}
+}
+
+// Quick format: no zero fill, the data outside the new structures stays.
+func TestFormatQuick(t *testing.T) {
+	useFileDevices(t)
+	calls := stubFormat(t, nil)
+	dst, data := fakeDisk(t, "dst", 4<<20, 0)
+	ev := &events{}
+	done := runJob(t, ev, "format", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runFormat(ctx, r, dst, "exfat", "mbr", "", false)
+	})
+	if done.Status != job.StatusDone || fmt.Sprint(phases(ev)) != "[format]" || len(*calls) != 1 {
+		t.Fatalf("job = %+v, phases = %v, calls = %v", done, phases(ev), *calls)
+	}
+	if !bytes.Equal(readHead(t, dst.Path, len(data)), data) {
+		t.Fatal("quick format zeroed the disk")
+	}
+}
+
+func TestFormatToolError(t *testing.T) {
+	useFileDevices(t)
+	stubFormat(t, errors.New("mkfs.ntfs: exit status 1"))
+	dst, _ := fakeDisk(t, "dst", 0, 4<<20)
+	done := runJob(t, &events{}, "format", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runFormat(ctx, r, dst, "ntfs", "mbr", "", false)
+	})
+	if done.Status != job.StatusFailed || !strings.HasPrefix(done.Error, "format_failed|") || !strings.Contains(done.Error, "mkfs.ntfs") {
+		t.Fatalf("job = %+v", done)
+	}
+	wantNotices(t, done.Notices, NoticeDestOffline)
+}
+
+// Canceling the zero fill stops before the format step.
+func TestFormatCancelZero(t *testing.T) {
+	useFileDevices(t)
+	calls := stubFormat(t, nil)
+	dst, _ := fakeDisk(t, "dst", 0, 160<<20)
+	ev := &events{}
+	m := job.NewManager(ev.emit)
+	cancelOnFirstBytes(ev, m)
+	m.Start("format", func(ctx context.Context, r *job.Reporter) (job.Result, error) {
+		return runFormat(ctx, r, dst, "ntfs", "mbr", "", true)
+	})
+	m.Wait()
+	if got := ev.last().Status; got != job.StatusCanceled {
+		t.Fatalf("status = %s, want canceled", got)
+	}
+	if len(*calls) != 0 {
+		t.Fatalf("formatted after cancel: %v", *calls)
+	}
+}

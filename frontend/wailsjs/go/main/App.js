@@ -42,6 +42,10 @@ export function ListDisks() {
   return window['go']['main']['App']['ListDisks']();
 }
 
+export function ListFileSystems() {
+  return window['go']['main']['App']['ListFileSystems']();
+}
+
 export function PickImage() {
   return window['go']['main']['App']['PickImage']();
 }
@@ -64,6 +68,10 @@ export function SetLanguage(arg1) {
 
 export function StartClone(arg1, arg2, arg3) {
   return window['go']['main']['App']['StartClone'](arg1, arg2, arg3);
+}
+
+export function StartFormat(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['StartFormat'](arg1, arg2, arg3, arg4, arg5);
 }
 
 export function StartImage(arg1, arg2, arg3) {

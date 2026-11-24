@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store'
 
-export type JobKind = 'clone' | 'image' | 'restore'
+export type JobKind = 'clone' | 'image' | 'restore' | 'format'
 export type JobStatus = 'idle' | 'running' | 'done' | 'failed' | 'canceled'
 
 export interface Snapshot {

@@ -11,6 +11,7 @@ import (
 
 	"exactclone/internal/clone"
 	"exactclone/internal/disk"
+	"exactclone/internal/format"
 	"exactclone/internal/gpt"
 	"exactclone/internal/image"
 	"exactclone/internal/job"
@@ -30,6 +31,7 @@ var (
 	prepareForRead  = disk.PrepareForRead
 	prepareForWrite = disk.PrepareForWrite
 	finishWrite     = disk.FinishWrite
+	formatDisk      = format.Run
 )
 
 // isGPT looks for the "EFI PART" signature at LBA 1 (512 or 4096-byte sectors).
@@ -176,6 +178,56 @@ func writeToDisk(ctx context.Context, r *job.Reporter, src io.ReaderAt, dst disk
 		return gptMisplaced, coded("finish_failed", err)
 	}
 	return gptMisplaced, nil
+}
+
+// runFormat erases dst, optionally writing zeros over it (full), then creates
+// the partition table and the file system.
+func runFormat(ctx context.Context, r *job.Reporter, dst disk.Disk, fsID, scheme, label string, full bool) (res job.Result, err error) {
+	release, err := prepareForWrite(disk.Disk{}, dst)
+	if err != nil {
+		return res, coded("prepare_failed", err)
+	}
+	// Windows: the disk is offline until diskpart brings it online.
+	defer func() {
+		if err != nil && goruntime.GOOS == "windows" {
+			res.Notices = []string{NoticeDestOffline}
+		}
+	}()
+	if full {
+		err = zeroDisk(ctx, r, dst)
+	}
+	// Linux: sfdisk needs the disk free; Windows: diskpart needs the volume locks closed.
+	release()
+	if err != nil {
+		return res, err
+	}
+	r.Phase("format", 0)
+	if err := formatDisk(ctx, dst, fsID, scheme, label); err != nil {
+		if ctx.Err() != nil {
+			return res, clone.ErrCanceled
+		}
+		return res, coded("format_failed", err)
+	}
+	return res, nil
+}
+
+func zeroDisk(ctx context.Context, r *job.Reporter, dst disk.Disk) error {
+	d, err := openDevice(dst.Path, true)
+	if err != nil {
+		return coded("open_failed", err)
+	}
+	r.Phase("zero", d.Size())
+	err = clone.Zero(ctx, d, d.Size(), r.Add)
+	if cerr := d.Close(); err == nil {
+		err = cerr
+	}
+	switch {
+	case errors.Is(err, clone.ErrCanceled):
+		return err
+	case err != nil:
+		return coded("zero_failed", err)
+	}
+	return nil
 }
 
 // imageError maps image format errors to frontend codes.
