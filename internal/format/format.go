@@ -155,12 +155,14 @@ func checkLabel(s spec, label string) error {
 	return nil
 }
 
-// sfdiskScript creates scheme with one partition over the whole disk.
+// sfdiskScript creates scheme with one partition over the whole disk. The
+// partition line uses named fields only: sfdisk refuses a line that mixes
+// them with positional ones (",,type=83").
 func sfdiskScript(s spec, scheme string) string {
 	if scheme == SchemeGPT {
-		return "label: gpt\n,,type=" + s.gptType + "\n"
+		return "label: gpt\ntype=" + s.gptType + "\n"
 	}
-	return "label: dos\n,,type=" + s.mbrType + "\n"
+	return "label: dos\ntype=" + s.mbrType + "\n"
 }
 
 // mkfsArgs is the command line that formats device on Linux.

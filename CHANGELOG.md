@@ -2,6 +2,12 @@
 
 Tutte le modifiche rilevanti a ExactClone sono documentate in questo file.
 
+## [1.2.1] - 2026-11-24
+
+### Fixed
+
+- Linux: formatting a drive failed right away ("unsupported command" from sfdisk); the drive was left untouched.
+
 ## [1.2.0] - 2026-11-24
 
 ### Added

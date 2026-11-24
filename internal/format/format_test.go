@@ -2,6 +2,9 @@ package format
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -83,15 +86,88 @@ func TestMkfsArgs(t *testing.T) {
 	}
 }
 
+// The scripts are run by the real sfdisk on an image file (no root needed).
 func TestSfdiskScript(t *testing.T) {
-	ext4, _ := lookup("linux", "ext4")
-	fat, _ := lookup("linux", "fat32")
-	if got := sfdiskScript(ext4, SchemeMBR); got != "label: dos\n,,type=83\n" {
-		t.Errorf("ext4 mbr: %q", got)
+	if _, err := exec.LookPath("sfdisk"); err != nil {
+		t.Skip("sfdisk not installed")
 	}
-	if got := sfdiskScript(fat, SchemeGPT); got != "label: gpt\n,,type="+gptBasicData+"\n" {
-		t.Errorf("fat32 gpt: %q", got)
+	for _, s := range linuxSpecs {
+		for scheme, label := range map[string]string{SchemeMBR: "dos", SchemeGPT: "gpt"} {
+			img := sparseFile(t, 64*mib)
+			cmd := exec.Command("sfdisk", "--wipe", "always", "--wipe-partitions", "always", img)
+			cmd.Stdin = strings.NewReader(sfdiskScript(s, scheme))
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("%s %s: %v\n%s", s.ID, scheme, err, out)
+			}
+			out, err := exec.Command("sfdisk", "-d", img).Output()
+			if err != nil {
+				t.Fatal(err)
+			}
+			typ := s.mbrType
+			if scheme == SchemeGPT {
+				typ = s.gptType
+			}
+			dump := string(out)
+			if !strings.Contains(dump, "label: "+label) || !strings.Contains(dump, "type="+typ) || strings.Count(dump, "start=") != 1 {
+				t.Errorf("%s %s:\n%s", s.ID, scheme, dump)
+			}
+		}
 	}
+}
+
+// Every installed mkfs runs with the generated arguments on an image file;
+// blkid must find the file system and the label.
+func TestMkfsRuns(t *testing.T) {
+	if _, err := exec.LookPath("blkid"); err != nil {
+		t.Skip("blkid not installed")
+	}
+	blkType := map[string]string{"fat32": "vfat"}
+	for _, s := range linuxSpecs {
+		t.Run(s.ID, func(t *testing.T) {
+			if !lookPath(s.Tool) {
+				t.Skip(s.Tool + " not installed")
+			}
+			img := sparseFile(t, 512*mib)
+			args := mkfsArgs(s, img, "Test1")
+			if s.ID == "ntfs" {
+				// mkfs.ntfs refuses a regular file without -F; a block device needs none.
+				args = append(args[:len(args)-1], "-F", img)
+			}
+			if out, err := exec.Command(args[0], args[1:]...).CombinedOutput(); err != nil {
+				t.Fatalf("%v: %v\n%s", args, err, out)
+			}
+			want := s.ID
+			if w, ok := blkType[s.ID]; ok {
+				want = w
+			}
+			if got := blkid(t, img, "TYPE"); got != want {
+				t.Errorf("TYPE = %q, want %q", got, want)
+			}
+			if got := blkid(t, img, "LABEL"); !strings.EqualFold(got, "Test1") {
+				t.Errorf("LABEL = %q", got)
+			}
+		})
+	}
+}
+
+func sparseFile(t *testing.T, size int64) string {
+	t.Helper()
+	p := filepath.Join(t.TempDir(), "disk.img")
+	f, err := os.Create(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if err := f.Truncate(size); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func blkid(t *testing.T, path, tag string) string {
+	t.Helper()
+	out, _ := exec.Command("blkid", "-p", "-o", "value", "-s", tag, path).Output()
+	return strings.TrimSpace(string(out))
 }
 
 func TestPartitionPath(t *testing.T) {

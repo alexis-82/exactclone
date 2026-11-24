@@ -5,7 +5,7 @@
 **Exact copies of your disks, compressed backup images and drive formatting, for Windows and Linux**<br>
 *Copie esatte dei tuoi dischi, immagini di backup compresse e formattazione delle unità, per Windows e Linux*
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=plastic)](CHANGELOG.md)&nbsp;&nbsp;&nbsp;[![Go](https://img.shields.io/badge/Go-00ADD8?style=plastic&logo=go&logoColor=white)](#)&nbsp;&nbsp;&nbsp;[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey?style=plastic)](#)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue?style=plastic)](CHANGELOG.md)&nbsp;&nbsp;&nbsp;[![Go](https://img.shields.io/badge/Go-00ADD8?style=plastic&logo=go&logoColor=white)](#)&nbsp;&nbsp;&nbsp;[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey?style=plastic)](#)
 
 🇬🇧 [English](#en)&nbsp;&nbsp;·&nbsp;&nbsp;🇮🇹 [Italiano](#it)
 
